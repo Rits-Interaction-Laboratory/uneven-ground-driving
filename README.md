@@ -25,3 +25,11 @@ $ git clone https://github.com/ROBOTIS-GIT/turtlebot3_simulations.git
 $ cd ../ && catkin_make
 $ source devel/setup.zsh # シェルに応じて変更必須
 ```
+
+### Gazebo 上でロボットをシミュレートする
+
+```sh
+$ export TURTLEBOT3_MODEL=burger
+$ roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch
+$ roslaunch simulator teleop_key.launch
+```
