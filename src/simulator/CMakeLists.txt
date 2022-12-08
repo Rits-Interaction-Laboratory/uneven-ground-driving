@@ -9,7 +9,10 @@ project(simulator)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  sensor_msgs
+  nav_msgs
   rospy
+  cv_bridge
 )
 
 ## System dependencies are found with CMake's conventions

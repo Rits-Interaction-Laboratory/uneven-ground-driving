@@ -101,7 +101,7 @@ if __name__ == "__main__":
     settings = termios.tcgetattr(sys.stdin)
 
     rospy.init_node('simulator')
-    twist_publisher = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+    twist_topic = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 
     turtlebot3_model = rospy.get_param("model", "burger")
 
@@ -157,7 +157,7 @@ if __name__ == "__main__":
             twist.angular.y = 0.0
             twist.angular.z = control_angular_vel
 
-            twist_publisher.publish(twist)
+            twist_topic.publish(twist)
 
     except Exception:
         print(e)
@@ -170,6 +170,6 @@ if __name__ == "__main__":
         twist.angular.x = 0.0
         twist.angular.y = 0.0
         twist.angular.z = 0.0
-        twist_publisher.publish(twist)
+        twist_topic.publish(twist)
 
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)

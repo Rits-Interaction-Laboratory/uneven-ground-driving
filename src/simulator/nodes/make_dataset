@@ -1,0 +1,67 @@
+#!/usr/bin/env python
+
+import time
+import rospy
+from geometry_msgs.msg import Twist
+from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge, CvBridgeError
+import cv2
+
+
+MAX_LINEAR_VEL = 0.26
+
+bridge = CvBridge()
+
+
+class Position:
+    def __init__(self, x, y, z):
+        self.x: float = x
+        self.y: float = y
+        self.z: float = z
+
+    def __str__(self):
+        return "Position: {x: %5.3f, y: %5.3f, z: %5.3f}" % (self.x, self.y, self.z)
+
+
+def odom_callback(msg: Odometry):
+    position = Position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z)
+    print(position)
+
+
+def image_callback(msg: Image):
+    try:
+        cv2_img = bridge.imgmsg_to_cv2(msg)
+        cv2.imwrite('camera_image.jpeg', cv2_img)
+    except CvBridgeError:
+        print('Failed to save image.')
+
+
+if __name__ == "__main__":
+    rospy.init_node('simulator')
+    twist_topic = rospy.Publisher('cmd_vel', Twist, queue_size=10)
+    rospy.Subscriber('/odom', Odometry, odom_callback)
+    # rospy.Subscriber("/camera/depth/image_raw", Image, callback=image_callback, queue_size=1)
+    # rospy.spin()
+
+    # TODO: 本アプリケーションにPub/Subはミスマッチ
+    # なので、awaitを差し込みたい
+
+    # TODO: ロボットの初期位置をランダムに決定
+    init_position = Position(0.0, 0.0, 0.0)
+
+    # TODO: 俯瞰した深度画像を撮影
+
+    # 一定時間ロボットを前進させる
+    twist = Twist()
+    twist.linear.x = MAX_LINEAR_VEL
+
+    started_at = time.time()
+    while (time.time() - started_at) < 2.0:
+        twist_topic.publish(twist)
+
+    twist.linear.x = 0.0
+    twist_topic.publish(twist)
+    time.sleep(0.1)
+
+    # TODO: 移動量(相対位置ベクトル)を計測
