@@ -9,6 +9,7 @@ project(simulator)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
+  gazebo_msgs
   sensor_msgs
   nav_msgs
   rospy

@@ -1,37 +1,57 @@
 #!/usr/bin/env python
 
 import time
+import json
+import random
+
 import rospy
+from gazebo_msgs.msg import ModelState
+from gazebo_msgs.srv import SetModelState
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 
-
-MAX_LINEAR_VEL = 0.26
-
-bridge = CvBridge()
+from collections.abc import Callable
+from position import Position, PositionRepository
 
 
-class Position:
-    def __init__(self, x, y, z):
-        self.x: float = x
-        self.y: float = y
-        self.z: float = z
+TURTLEBOT3_MODEL_NAME: str = "turtlebot3_waffle"
+MAX_VELOCITY: float = 0.26
 
-    def __str__(self):
-        return "Position: {x: %5.3f, y: %5.3f, z: %5.3f}" % (self.x, self.y, self.z)
+cv_bridge = CvBridge()
+position_repository = PositionRepository()
+set_model_state: Callable = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
+
+
+def place_roboto_on_random_position():
+    """
+    ロボットをランダムな位置に配置する
+    """
+
+    model_state = ModelState()
+    model_state.model_name = TURTLEBOT3_MODEL_NAME
+    model_state.pose.position.x = random.uniform(-5.0, 5.0)
+    model_state.pose.position.y = random.uniform(-5.0, 5.0)
+    model_state.pose.position.z = 0.0
+
+    model_state.pose.orientation.x = 0.0
+    model_state.pose.orientation.y = 0.0
+    model_state.pose.orientation.z = 0.0
+    model_state.pose.orientation.w = 0.0
+
+    set_model_state(model_state)
 
 
 def odom_callback(msg: Odometry):
     position = Position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z)
-    print(position)
+    position_repository.insert(position)
 
 
 def image_callback(msg: Image):
     try:
-        cv2_img = bridge.imgmsg_to_cv2(msg)
+        cv2_img = cv_bridge.imgmsg_to_cv2(msg)
         cv2.imwrite('camera_image.jpeg', cv2_img)
     except CvBridgeError:
         print('Failed to save image.')
@@ -47,14 +67,14 @@ if __name__ == "__main__":
     # TODO: 本アプリケーションにPub/Subはミスマッチ
     # なので、awaitを差し込みたい
 
-    # TODO: ロボットの初期位置をランダムに決定
-    init_position = Position(0.0, 0.0, 0.0)
+    # ロボットをランダムな位置に配置する
+    place_roboto_on_random_position()
 
     # TODO: 俯瞰した深度画像を撮影
 
     # 一定時間ロボットを前進させる
     twist = Twist()
-    twist.linear.x = MAX_LINEAR_VEL
+    twist.linear.x = MAX_VELOCITY
 
     started_at = time.time()
     while (time.time() - started_at) < 2.0:
@@ -64,4 +84,23 @@ if __name__ == "__main__":
     twist_topic.publish(twist)
     time.sleep(0.1)
 
-    # TODO: 移動量(相対位置ベクトル)を計測
+    # 測定結果を記録する
+    # TODO: フレームごとのポジション配列が欲しい(n秒後はこの位置まで移動した、のような配列)
+    # FIXME: init_positionは信頼できないっぽい？
+    init_position = position_repository.select_oldest_position()
+    final_position = position_repository.select_latest_position()
+    json_str = json.dumps({
+        'init_position': {
+            'x': init_position.x,
+            'y': init_position.y,
+            'z': init_position.z,
+        },
+        'final_position': {
+            'x': final_position.x,
+            'y': final_position.y,
+            'z': final_position.z,
+        },
+        'image_filename': 'XXX.png',
+    })
+    with open('data.jsonl', 'a') as f:
+        f.write(json_str + '\n')
