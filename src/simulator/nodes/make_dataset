@@ -1,26 +1,26 @@
 #!/usr/bin/env python
 
-import time
 import json
+import os
 import random
-import numpy as np
+import time
+from collections.abc import Callable
 
+import cv2
 import rospy
+from cv_bridge import CvBridge, CvBridgeError
 from gazebo_msgs.msg import ModelState
 from gazebo_msgs.srv import SetModelState
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
-from cv_bridge import CvBridge, CvBridgeError
-import cv2
 
-from collections.abc import Callable
-from position import Position, PositionRepository
 from config import Config
-
+from context_holder import ContextHolder
+from odometry import OdometryModel
 
 cv_bridge = CvBridge()
-position_repository = PositionRepository()
+context_holder = ContextHolder()
 
 rospy.wait_for_service('/gazebo/set_model_state')
 set_model_state: Callable = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
@@ -33,8 +33,6 @@ def place_robot_on_random_position():
 
     x_position: float = random.uniform(-5.0, 5.0)
     y_position: float = random.uniform(-5.0, 5.0)
-
-    rospy.loginfo('Place robot on (%f, %f)' % (x_position, y_position))
 
     model_state = ModelState()
     model_state.model_name = Config.TURTLEBOT3_MODEL_NAME
@@ -49,33 +47,7 @@ def place_robot_on_random_position():
 
     set_model_state(model_state)
 
-
-def odom_callback(msg: Odometry):
-    """
-    /odom トピックのコールバック関数
-    """
-
-    rospy.loginfo('Current Robot position is received from `/odom` topic.')
-
-    position = Position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z)
-    position_repository.insert(position)
-
-
-def depth_image_callback(msg: Image):
-    """
-    /camera/depth/image_raw トピックのコールバック関数
-    """
-
-    rospy.loginfo('Depth image is received from `/camera/depth/image_raw` topic.')
-
-    try:
-        filename: str = f'images/{int(time.time())}.jpeg'
-        depth_image = cv_bridge.imgmsg_to_cv2(msg)
-        depth_array = np.array(depth_image, dtype=np.float32)
-        cv2.normalize(depth_array, depth_array, 0, 1, cv2.NORM_MINMAX)
-        cv2.imwrite(filename, depth_array * 255)
-    except CvBridgeError:
-        rospy.logerr('Failed to save depth image.')
+    rospy.loginfo('Complete to place the robot on (%f, %f).' % (x_position, y_position))
 
 
 def capture_camera_image():
@@ -87,48 +59,86 @@ def capture_camera_image():
     rospy.wait_for_message('/camera/depth/image_raw', Image)
     get_image_topic.unregister()
 
+    rospy.loginfo('Complete to capture camera image.')
+
 
 def save_measured_result():
     """
     計測結果を保存する
     """
 
-    positions = position_repository.select_all()
     json_str = json.dumps({
-        'positions': [position.to_json() for position in positions],
-        'image_filename': 'XXX.png',
+        'image_filename': context_holder.image_filename,
+        'odometries': [odometry.to_json() for odometry in context_holder.get_odometry_histories()],
     })
     with open(Config.MEASURED_RESULT_FILENAME, 'a') as f:
         f.write(json_str + '\n')
 
-    rospy.loginfo('Measured result is saved.')
+    rospy.loginfo('Complete to save measured result.')
+
+
+def odometry_callback(msg: Odometry):
+    """
+    /odom トピックのコールバック関数
+    """
+
+    # rospy.loginfo('Current Robot odometry is received from `/odom` topic.')
+
+    odometry = OdometryModel(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z,
+                             msg.pose.pose.orientation.x, msg.pose.pose.orientation.y, msg.pose.pose.orientation.z,
+                             msg.pose.pose.orientation.w)
+    context_holder.add_odometry_history(odometry)
+
+
+def depth_image_callback(msg: Image):
+    """
+    /camera/depth/image_raw トピックのコールバック関数
+    """
+
+    # rospy.loginfo('Depth image is received from `/camera/depth/image_raw` topic.')
+
+    try:
+        depth_image = cv_bridge.imgmsg_to_cv2(msg)
+        # depth_image = np.array(depth_image, dtype=np.float32)
+        # cv2.normalize(depth_image, depth_image, 0, 1, cv2.NORM_MINMAX)
+        # depth_image *= 255
+        cv2.imwrite(context_holder.image_filename, depth_image)
+    except CvBridgeError:
+        rospy.logerr('Failed to save depth image.')
 
 
 if __name__ == "__main__":
+    os.makedirs(f'{Config.BASE_RESULT_PATH}', exist_ok=True)
+    os.makedirs(f'{Config.IMAGES_PATH}', exist_ok=True)
+
     rospy.init_node('simulator')
     twist_topic = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 
-    # ロボットをランダムな位置に配置
-    position_repository.delete_all()
-    place_robot_on_random_position()
+    while True:
+        rospy.loginfo('Start to measure.')
+        context_holder.start_to_measure()
 
-    # ロボット位置を購読
-    odometry_topic = rospy.Subscriber('/odom', Odometry, odom_callback)
-    rospy.wait_for_message('/odom', Odometry)
+        # ロボットをランダムな位置に配置し、 /odom トピックを購読開始する
+        # ただし、移動が完了したら必ず購読解除すること
+        place_robot_on_random_position()
+        odometry_topic = rospy.Subscriber('/odom', Odometry, odometry_callback)
+        rospy.wait_for_message('/odom', Odometry)
 
-    # カメラ視点の画像を保存
-    capture_camera_image()
+        # 配置後の画像であることを保証するために、
+        # 配置後に /odom からメッセージを受信するまで画像キャプチャは絶対に行わない
+        capture_camera_image()
 
-    # 一定時間ロボットを前進させる
-    twist = Twist()
-    twist.linear.x = Config.MAX_VELOCITY
-    started_at = time.time()
-    while (time.time() - started_at) < Config.PERIOD_TO_MOVE:
+        # MAX_VELOCITY 秒間、ロボットを前進させる
+        rospy.loginfo(f'Move the robot forward on {Config.PERIOD_TO_MOVE} seconds.')
+        twist = Twist()
+        twist.linear.x = Config.LINEAR_VELOCITY
         twist_topic.publish(twist)
 
-    odometry_topic.unregister()
-    twist.linear.x = 0.0
-    twist_topic.publish(twist)
+        time.sleep(Config.PERIOD_TO_MOVE)
 
-    # 計測結果を記録
-    save_measured_result()
+        odometry_topic.unregister()
+        twist.linear.x = 0.0
+        twist_topic.publish(twist)
+
+        # 計測結果を記録
+        save_measured_result()

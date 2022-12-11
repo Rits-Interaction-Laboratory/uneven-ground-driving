@@ -9,10 +9,19 @@
 - Ubuntu 20.04
 - ROS Noetic
 - Gazebo
+- Python 3.9
 
 ### インストール
 
-依存関係のインストール手順は各自で調べてください。
+まずはROS Noeticをインストールしてください。
+
+未確認ですが、別ディストリビューションでも動くかもしれません。
+
+```sh
+$ sudo apt install -y ros-noetic-desktop-full
+```
+
+次に本リポジトリをcloneし、catkinプロジェクトをビルドしましょう。
 
 ```sh
 $ git clone <this repo>
@@ -26,6 +35,8 @@ $ cd ../ && catkin_make
 $ source devel/setup.zsh # シェルに応じて変更必須
 ```
 
+## 実行方法
+
 ### Gazebo 上でロボットをシミュレートする
 
 ```sh
@@ -36,18 +47,13 @@ $ roslaunch simulator teleop_key.launch
 
 ### データセットを作成する
 
-まずは画像の保存先を作成してください。
-
-```sh
-$ mkdir ~/.ros/images
-```
-
-次に、下記コマンドで不整地走行をシミュレートしましょう。
-
-計測データは`~/.ros`に保存されます。
+計測データは`~/.ros/uneven-ground-driving-result`に保存されます。
 
 ```sh
 $ export TURTLEBOT3_MODEL=waffle
 $ roslaunch turtlebot3_gazebo turtlebot3_empty_world_headless.launch
+$ GAZEBO_RESOURCE_PATH="$GAZEBO_RESOURCE_PATH:$HOME/workspace/uneven-ground-driving" roslaunch turtlebot3_gazebo turtlebot3_dem_world.launch
+
+# 別のターミナルでデータセット作成スクリプトを実行
 $ roslaunch simulator make_dataset.launch
 ```

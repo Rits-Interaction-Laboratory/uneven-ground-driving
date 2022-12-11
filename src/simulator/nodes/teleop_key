@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
+import select
+import sys
+import termios
+import tty
+
 import rospy
 from geometry_msgs.msg import Twist
-import sys
-import select
-import tty
-import termios
 
 BURGER_MAX_LIN_VEL = 0.22
 BURGER_MAX_ANG_VEL = 2.84

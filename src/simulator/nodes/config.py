@@ -1,10 +1,20 @@
 class Config:
-    MEASURED_RESULT_FILENAME: str = "data.jsonl"
+    BASE_RESULT_PATH: str = 'uneven-ground-driving-result'
     """
-    測定結果を保存するファイル名(~/.rosに保存される)
+    結果を保存するパス（~/.ros直下に保存される）
     """
 
-    TURTLEBOT3_MODEL_NAME: str = "turtlebot3_waffle"
+    IMAGES_PATH: str = f'{BASE_RESULT_PATH}/images'
+    """
+    画像を保存するパス
+    """
+
+    MEASURED_RESULT_FILENAME: str = f'{BASE_RESULT_PATH}/result.jsonl'
+    """
+    測定結果を保存するファイル名
+    """
+
+    TURTLEBOT3_MODEL_NAME: str = 'turtlebot3_waffle'
     """
     TurtleBot3のモデル名
     """
@@ -14,10 +24,10 @@ class Config:
     ロボットを前進させる期間 [秒]
     """
 
-    MAX_VELOCITY: float = 0.26
+    LINEAR_VELOCITY: float = 0.26
     """
-    最大速度
+    移動速度速度
 
-    waffle: 0.26
-    burger: 0.22
+    waffle: 0.0 ~ 0.26
+    burger: 0.0 ~ 0.22
     """
