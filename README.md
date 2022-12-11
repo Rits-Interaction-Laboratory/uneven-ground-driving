@@ -33,3 +33,21 @@ $ export TURTLEBOT3_MODEL=waffle
 $ roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch
 $ roslaunch simulator teleop_key.launch
 ```
+
+### データセットを作成する
+
+まずは画像の保存先を作成してください。
+
+```sh
+$ mkdir ~/.ros/images
+```
+
+次に、下記コマンドで不整地走行をシミュレートしましょう。
+
+計測データは`~/.ros`に保存されます。
+
+```sh
+$ export TURTLEBOT3_MODEL=waffle
+$ roslaunch turtlebot3_gazebo turtlebot3_empty_world_headless.launch
+$ roslaunch simulator make_dataset.launch
+```

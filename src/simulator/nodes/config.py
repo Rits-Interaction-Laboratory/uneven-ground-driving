@@ -9,7 +9,7 @@ class Config:
     TurtleBot3のモデル名
     """
 
-    PERIOD_TO_MOVE: float = 2.0
+    PERIOD_TO_MOVE: float = 3.0
     """
     ロボットを前進させる期間 [秒]
     """

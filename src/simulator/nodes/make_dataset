@@ -69,17 +69,28 @@ def depth_image_callback(msg: Image):
     rospy.loginfo('Depth image is received from `/camera/depth/image_raw` topic.')
 
     try:
+        filename: str = f'images/{int(time.time())}.jpeg'
         depth_image = cv_bridge.imgmsg_to_cv2(msg)
         depth_array = np.array(depth_image, dtype=np.float32)
         cv2.normalize(depth_array, depth_array, 0, 1, cv2.NORM_MINMAX)
-        cv2.imwrite('camera_image.jpeg', depth_array * 255)
+        cv2.imwrite(filename, depth_array * 255)
     except CvBridgeError:
         rospy.logerr('Failed to save depth image.')
 
 
+def capture_camera_image():
+    """
+    カメラ画像を保存する
+    """
+
+    get_image_topic = rospy.Subscriber("/camera/depth/image_raw", Image, callback=depth_image_callback, queue_size=1)
+    rospy.wait_for_message('/camera/depth/image_raw', Image)
+    get_image_topic.unregister()
+
+
 def save_measured_result():
     """
-    測定結果を保存する
+    計測結果を保存する
     """
 
     positions = position_repository.select_all()
@@ -97,7 +108,7 @@ if __name__ == "__main__":
     rospy.init_node('simulator')
     twist_topic = rospy.Publisher('cmd_vel', Twist, queue_size=10)
 
-    # ロボットをランダムな位置に配置する
+    # ロボットをランダムな位置に配置
     position_repository.delete_all()
     place_robot_on_random_position()
 
@@ -105,21 +116,19 @@ if __name__ == "__main__":
     odometry_topic = rospy.Subscriber('/odom', Odometry, odom_callback)
     rospy.wait_for_message('/odom', Odometry)
 
-    # TODO: 俯瞰した深度画像を撮影
-    get_image_topic = rospy.Subscriber("/camera/depth/image_raw", Image, callback=depth_image_callback, queue_size=1)
-    rospy.wait_for_message('/camera/depth/image_raw', Image)
-    get_image_topic.unregister()
+    # カメラ視点の画像を保存
+    capture_camera_image()
 
     # 一定時間ロボットを前進させる
     twist = Twist()
     twist.linear.x = Config.MAX_VELOCITY
-
     started_at = time.time()
-    while (time.time() - started_at) < 3.0:
+    while (time.time() - started_at) < Config.PERIOD_TO_MOVE:
         twist_topic.publish(twist)
+
     odometry_topic.unregister()
     twist.linear.x = 0.0
     twist_topic.publish(twist)
 
-    # 測定結果を記録する
+    # 計測結果を記録
     save_measured_result()
