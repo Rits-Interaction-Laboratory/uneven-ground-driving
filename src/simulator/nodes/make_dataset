@@ -3,6 +3,7 @@
 import time
 import json
 import random
+import numpy as np
 
 import rospy
 from gazebo_msgs.msg import ModelState
@@ -15,25 +16,30 @@ import cv2
 
 from collections.abc import Callable
 from position import Position, PositionRepository
+from config import Config
 
-
-TURTLEBOT3_MODEL_NAME: str = "turtlebot3_waffle"
-MAX_VELOCITY: float = 0.26
 
 cv_bridge = CvBridge()
 position_repository = PositionRepository()
+
+rospy.wait_for_service('/gazebo/set_model_state')
 set_model_state: Callable = rospy.ServiceProxy('/gazebo/set_model_state', SetModelState)
 
 
-def place_roboto_on_random_position():
+def place_robot_on_random_position():
     """
     ロボットをランダムな位置に配置する
     """
 
+    x_position: float = random.uniform(-5.0, 5.0)
+    y_position: float = random.uniform(-5.0, 5.0)
+
+    rospy.loginfo('Place robot on (%f, %f)' % (x_position, y_position))
+
     model_state = ModelState()
-    model_state.model_name = TURTLEBOT3_MODEL_NAME
-    model_state.pose.position.x = random.uniform(-5.0, 5.0)
-    model_state.pose.position.y = random.uniform(-5.0, 5.0)
+    model_state.model_name = Config.TURTLEBOT3_MODEL_NAME
+    model_state.pose.position.x = x_position
+    model_state.pose.position.y = y_position
     model_state.pose.position.z = 0.0
 
     model_state.pose.orientation.x = 0.0
@@ -45,62 +51,75 @@ def place_roboto_on_random_position():
 
 
 def odom_callback(msg: Odometry):
+    """
+    /odom トピックのコールバック関数
+    """
+
+    rospy.loginfo('Current Robot position is received from `/odom` topic.')
+
     position = Position(msg.pose.pose.position.x, msg.pose.pose.position.y, msg.pose.pose.position.z)
     position_repository.insert(position)
 
 
-def image_callback(msg: Image):
+def depth_image_callback(msg: Image):
+    """
+    /camera/depth/image_raw トピックのコールバック関数
+    """
+
+    rospy.loginfo('Depth image is received from `/camera/depth/image_raw` topic.')
+
     try:
-        cv2_img = cv_bridge.imgmsg_to_cv2(msg)
-        cv2.imwrite('camera_image.jpeg', cv2_img)
+        depth_image = cv_bridge.imgmsg_to_cv2(msg)
+        depth_array = np.array(depth_image, dtype=np.float32)
+        cv2.normalize(depth_array, depth_array, 0, 1, cv2.NORM_MINMAX)
+        cv2.imwrite('camera_image.jpeg', depth_array * 255)
     except CvBridgeError:
-        print('Failed to save image.')
+        rospy.logerr('Failed to save depth image.')
+
+
+def save_measured_result():
+    """
+    測定結果を保存する
+    """
+
+    positions = position_repository.select_all()
+    json_str = json.dumps({
+        'positions': [position.to_json() for position in positions],
+        'image_filename': 'XXX.png',
+    })
+    with open(Config.MEASURED_RESULT_FILENAME, 'a') as f:
+        f.write(json_str + '\n')
+
+    rospy.loginfo('Measured result is saved.')
 
 
 if __name__ == "__main__":
     rospy.init_node('simulator')
     twist_topic = rospy.Publisher('cmd_vel', Twist, queue_size=10)
-    rospy.Subscriber('/odom', Odometry, odom_callback)
-    # rospy.Subscriber("/camera/depth/image_raw", Image, callback=image_callback, queue_size=1)
-    # rospy.spin()
-
-    # TODO: 本アプリケーションにPub/Subはミスマッチ
-    # なので、awaitを差し込みたい
 
     # ロボットをランダムな位置に配置する
-    place_roboto_on_random_position()
+    position_repository.delete_all()
+    place_robot_on_random_position()
+
+    # ロボット位置を購読
+    odometry_topic = rospy.Subscriber('/odom', Odometry, odom_callback)
+    rospy.wait_for_message('/odom', Odometry)
 
     # TODO: 俯瞰した深度画像を撮影
+    get_image_topic = rospy.Subscriber("/camera/depth/image_raw", Image, callback=depth_image_callback, queue_size=1)
+    rospy.wait_for_message('/camera/depth/image_raw', Image)
+    get_image_topic.unregister()
 
     # 一定時間ロボットを前進させる
     twist = Twist()
-    twist.linear.x = MAX_VELOCITY
+    twist.linear.x = Config.MAX_VELOCITY
 
     started_at = time.time()
-    while (time.time() - started_at) < 2.0:
+    while (time.time() - started_at) < 3.0:
         twist_topic.publish(twist)
-
+    odometry_topic.unregister()
     twist.linear.x = 0.0
     twist_topic.publish(twist)
-    time.sleep(0.1)
 
     # 測定結果を記録する
-    # TODO: フレームごとのポジション配列が欲しい(n秒後はこの位置まで移動した、のような配列)
-    # FIXME: init_positionは信頼できないっぽい？
-    init_position = position_repository.select_oldest_position()
-    final_position = position_repository.select_latest_position()
-    json_str = json.dumps({
-        'init_position': {
-            'x': init_position.x,
-            'y': init_position.y,
-            'z': init_position.z,
-        },
-        'final_position': {
-            'x': final_position.x,
-            'y': final_position.y,
-            'z': final_position.z,
-        },
-        'image_filename': 'XXX.png',
-    })
-    with open('data.jsonl', 'a') as f:
-        f.write(json_str + '\n')
+    save_measured_result()
