@@ -39,6 +39,8 @@ $ source devel/setup.zsh # シェルに応じて変更必須
 
 ### Gazebo 上でロボットをシミュレートする
 
+キー入力でロボットを操作できれば、環境構築は完了です。
+
 ```sh
 $ export TURTLEBOT3_MODEL=waffle
 $ roslaunch turtlebot3_gazebo turtlebot3_empty_world.launch
@@ -51,8 +53,10 @@ $ roslaunch simulator teleop_key.launch
 
 ```sh
 $ export TURTLEBOT3_MODEL=waffle
-$ roslaunch turtlebot3_gazebo turtlebot3_empty_world_headless.launch
-$ GAZEBO_RESOURCE_PATH="$GAZEBO_RESOURCE_PATH:$HOME/workspace/uneven-ground-driving" roslaunch turtlebot3_gazebo turtlebot3_dem_world.launch
+$ export GAZEBO_RESOURCE_PATH="$GAZEBO_RESOURCE_PATH:$HOME/workspace/uneven-ground-driving"
+
+# Gazeboを起動
+$ roslaunch turtlebot3_gazebo dem.launch
 
 # 別のターミナルでデータセット作成スクリプトを実行
 $ roslaunch simulator make_dataset.launch

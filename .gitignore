@@ -170,8 +170,6 @@ src/turtlebot3
 src/turtlebot3_msgs
 src/turtlebot3_simulations
 
-# DEM
+# Others
 media/
-
-# make_dataset result
-uneven-ground-driving-result/
+.ros
