@@ -31,3 +31,8 @@ class Config:
     waffle: 0.0 ~ 0.26
     burger: 0.0 ~ 0.22
     """
+
+    IS_DRY_RUN: bool = False
+    """
+    DRY RUNモードで実行するか
+    """

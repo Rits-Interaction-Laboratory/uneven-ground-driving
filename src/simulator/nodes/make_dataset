@@ -72,8 +72,9 @@ def save_measured_result():
         'image_filename': context_holder.image_filename,
         'odometries': [odometry.to_json() for odometry in context_holder.get_odometry_histories()],
     })
-    with open(Config.MEASURED_RESULT_FILENAME, 'a') as f:
-        f.write(json_str + '\n')
+    if not Config.IS_DRY_RUN:
+        with open(Config.MEASURED_RESULT_FILENAME, 'a') as f:
+            f.write(json_str + '\n')
 
     rospy.loginfo('Complete to save measured result.')
 
@@ -103,7 +104,8 @@ def depth_image_callback(msg: Image):
         depth_image = np.array(depth_image, dtype=np.float32)
         cv2.normalize(depth_image, depth_image, 0, 1, cv2.NORM_MINMAX)
         depth_image *= 255
-        cv2.imwrite(context_holder.image_filename, depth_image)
+        if not Config.IS_DRY_RUN:
+            cv2.imwrite(context_holder.image_filename, depth_image)
     except CvBridgeError:
         rospy.logerr('Failed to save depth image.')
 
