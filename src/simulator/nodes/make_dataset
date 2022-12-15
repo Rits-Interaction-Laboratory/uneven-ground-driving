@@ -7,6 +7,7 @@ import time
 from collections.abc import Callable
 
 import cv2
+import numpy as np
 import rospy
 from cv_bridge import CvBridge, CvBridgeError
 from gazebo_msgs.msg import ModelState
@@ -31,8 +32,8 @@ def place_robot_on_random_position():
     ロボットをランダムな位置に配置する
     """
 
-    x_position: float = random.uniform(-5.0, 5.0)
-    y_position: float = random.uniform(-5.0, 5.0)
+    x_position: float = random.uniform(-50.0, 50.0)
+    y_position: float = random.uniform(-50.0, 50.0)
 
     model_state = ModelState()
     model_state.model_name = Config.TURTLEBOT3_MODEL_NAME
@@ -99,9 +100,9 @@ def depth_image_callback(msg: Image):
 
     try:
         depth_image = cv_bridge.imgmsg_to_cv2(msg)
-        # depth_image = np.array(depth_image, dtype=np.float32)
-        # cv2.normalize(depth_image, depth_image, 0, 1, cv2.NORM_MINMAX)
-        # depth_image *= 255
+        depth_image = np.array(depth_image, dtype=np.float32)
+        cv2.normalize(depth_image, depth_image, 0, 1, cv2.NORM_MINMAX)
+        depth_image *= 255
         cv2.imwrite(context_holder.image_filename, depth_image)
     except CvBridgeError:
         rospy.logerr('Failed to save depth image.')
