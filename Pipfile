@@ -13,7 +13,7 @@ numpy = "*"
 flake8 = "*"
 autopep8 = "*"
 mypy = "*"
-tensorflow = "*"
+tensorflow = "~=2.3"
 
 [requires]
 python_version = "3.9"

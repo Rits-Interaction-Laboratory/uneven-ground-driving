@@ -171,5 +171,7 @@ src/turtlebot3_msgs
 src/turtlebot3_simulations
 
 # Others
+data/
+!data/.gitkeep
 media/
 .ros

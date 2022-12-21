@@ -1,17 +1,17 @@
 FROM tensorflow/tensorflow:2.3.0-gpu
 
-ENV WORKDIR /app/
+WORKDIR /app/
 
-WORKDIR ${WORKDIR}
-
-COPY Pipfile $WORKDIR
+COPY Pipfile Pipfile
 
 RUN pip install --upgrade pip &&  \
 	pip install pipenv && \
 	pipenv install --system --skip-lock
 
-COPY src/training $WORKDIR/src/training
-COPY main.py $WORKDIR/main.py
+COPY src/training src/training
+COPY main.py main.py
+
+COPY data /root/.ros/uneven-ground-driving-result
 
 # 利用するdockerイメージのPythonバージョンが3.6なので、
 # Python 3.9以降用の型アノテーションを削除する必要がある

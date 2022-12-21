@@ -1,4 +1,6 @@
-from tensorflow.python.keras import Sequential, layers
+# ローカルだとtensorflow 2.5系以降しかインストールできないためimportに失敗するが、Docker上では2.3系のため問題なく動作する
+from tensorflow.keras.applications.resnet_v2 import ResNet50V2
+from tensorflow.python.keras import layers, Sequential
 
 from src.training.nnet.base_nnet import BaseNNet
 
@@ -9,23 +11,7 @@ class ResNet(BaseNNet):
         モデルをビルド
         """
 
-        # TODO: ResNet::build_modelを実装
-        self.model = Sequential()
-
-        # input layer
-        self.model.add(layers.Input(shape=(500, 500, 1)))
-
-        # convolution 1st layer
-        self.model.add(layers.Conv2D(32, (3, 3), padding="same", activation="relu"))
-        self.model.add(layers.MaxPool2D())
-
-        # convolution 2nd layer
-        self.model.add(layers.Conv2D(32, (3, 3), padding="same", activation="relu"))
-        self.model.add(layers.MaxPool2D())
-
-        # fully connected 1st layer
-        self.model.add(layers.Flatten())
-        self.model.add(layers.Dense(64, activation="relu"))
-
-        # fully connected final layer
-        self.model.add(layers.Dense(2))
+        self.model = Sequential([
+            ResNet50V2(weights=None, input_shape=(500, 500, 1), include_top=False),
+            layers.Dense(5, activation=self.output_activation)
+        ])
