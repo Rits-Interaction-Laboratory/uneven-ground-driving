@@ -4,14 +4,22 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+keras-preprocessing = "*"
+pillow = "*"
+tqdm = "*"
+numpy = "*"
 
 [dev-packages]
 flake8 = "*"
 autopep8 = "*"
 mypy = "*"
+tensorflow = "*"
 
 [requires]
 python_version = "3.9"
 
 [scripts]
-start = "python src/training/main.py"
+train = "python main.py"
+format = "autopep8 -ivr src/training"
+lint = "flake8 --show-source src/training"
+mypy = "mypy src/training"
