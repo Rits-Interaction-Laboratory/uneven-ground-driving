@@ -1,5 +1,8 @@
 # 不整地走行シミュレータ
 
+![CI](https://github.com/Rits-Interaction-Laboratory/uneven-ground-driving/workflows/CI/badge.svg)
+![python version](https://img.shields.io/badge/python_version-3.9-blue.svg)
+
 本プロジェクトは不整地走行におけるより良い進行方向を提案するアプリケーションです。
 
 ## 開発

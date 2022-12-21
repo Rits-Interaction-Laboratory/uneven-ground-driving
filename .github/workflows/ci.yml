@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+          cache: pipenv
+
+      - name: dependencies
+        run: |
+          pip install -U pip
+          pip install pipenv
+          pipenv install
+          pipenv install --dev
+
+      - name: lint
+        run: |
+          pipenv run lint
