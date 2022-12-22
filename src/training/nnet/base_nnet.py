@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import tensorflow as tf
 import tensorflow.python.keras.backend as K
-from tensorflow.python.keras import Model
+from tensorflow.python.keras import Model, metrics
 from tensorflow.python.types.core import Tensor
 
 
@@ -39,7 +39,7 @@ class BaseNNet(metaclass=ABCMeta):
         self.model.compile(
             optimizer="adam",
             loss=self.loss,
-            metrics=[],
+            metrics=[self.x_movement_amount_metric, self.y_movement_amount_metric],
         )
 
     def load_weights(self, filename):
@@ -73,10 +73,10 @@ class BaseNNet(metaclass=ABCMeta):
         epsilon = K.constant(K.epsilon())
 
         # y: 実際の相対移動ベクトル（列ベクトル）
-        y = tf.linalg.matrix_transpose(y_true)
+        y = K.reshape(y_true[:, 0:2], (y_true.shape[0], 2, 1))
 
         # θ: 推定した相対移動ベクトル（列ベクトル）
-        θ = tf.linalg.matrix_transpose(y_true[:, 0:2])
+        θ = K.reshape(y_pred[:, 0:2], (y_pred.shape[0], 2, 1))
 
         # Σ = U * Λ * U^T のように分解する（ただし、Λは対角行列、Uは回転行列）
         # Λ = [[λ1, 0], [0, λ2]]
@@ -110,8 +110,8 @@ class BaseNNet(metaclass=ABCMeta):
         出力層の活性化関数
         """
 
-        θ_x = K.sigmoid(y_pred[:, 0])
-        θ_y = K.sigmoid(y_pred[:, 1])
+        θ_x = y_pred[:, 0]
+        θ_y = y_pred[:, 1]
         λ1 = K.relu(y_pred[:, 2])
         λ2 = K.relu(y_pred[:, 3])
         u1 = y_pred[:, 4]
@@ -121,3 +121,25 @@ class BaseNNet(metaclass=ABCMeta):
         u2 /= u1_u2_vector_length
 
         return K.stack([θ_x, θ_y, λ1, λ2, u1, u2], 1)
+
+    @staticmethod
+    def x_movement_amount_metric(y_true: Tensor, y_pred: Tensor) -> Tensor:
+        """
+        xの移動量の評価関数
+        """
+
+        y_1 = y_true[:, 0]
+        θ_1 = y_pred[:, 0]
+
+        return metrics.mean_absolute_error(y_1, θ_1)
+
+    @staticmethod
+    def y_movement_amount_metric(y_true: Tensor, y_pred: Tensor) -> Tensor:
+        """
+        xの移動量の評価関数
+        """
+
+        y_2 = y_true[:, 1]
+        θ_2 = y_pred[:, 1]
+
+        return metrics.mean_absolute_error(y_2, θ_2)

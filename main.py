@@ -5,7 +5,7 @@ import numpy as np
 
 from src.training.driving_record import DrivingRecord, DrivingRecordRepository
 from src.training.nnet.base_nnet import BaseNNet
-from src.training.nnet.cnn import CNN
+from src.training.nnet.resnet import ResNet
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -13,7 +13,7 @@ logging.basicConfig(
     format='[%(levelname)s] %(asctime)s --- %(message)s',
 )
 
-nnet: BaseNNet = CNN()
+nnet: BaseNNet = ResNet()
 driving_record_repository: DrivingRecordRepository = DrivingRecordRepository()
 
 
@@ -36,7 +36,7 @@ logging.info('訓練データセットをロード開始')
 driving_records: list[DrivingRecord] = driving_record_repository.select_all()
 output_stats(driving_records)
 x: np.ndarray = np.array([driving_record.image for driving_record in driving_records], dtype=np.float32)
-y: np.ndarray = np.array([[driving_record.get_movement_amount()] for driving_record in driving_records],
+y: np.ndarray = np.array([driving_record.get_movement_amount() for driving_record in driving_records],
                          dtype=np.float32)
 
 logging.info('訓練開始')
