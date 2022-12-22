@@ -18,6 +18,7 @@ class BaseNNet(metaclass=ABCMeta):
     """
 
     def __init__(self):
+        # TODO: 削除する
         tf.config.run_functions_eagerly(True)
         self.build_model()
         # self.model.summary()
@@ -58,12 +59,12 @@ class BaseNNet(metaclass=ABCMeta):
             x=x,
             y=y,
             epochs=50,
-            batch_size=256,
+            batch_size=128,
             validation_split=0.1,
         )
 
     @staticmethod
-    def loss(y_true_tensor: Tensor, y_pred_tensor: Tensor) -> Tensor:
+    def loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
         """
         損失関数
         """
@@ -71,40 +72,37 @@ class BaseNNet(metaclass=ABCMeta):
         # 分母が極端に小さくなることを防ぐためのオフセット
         epsilon = K.constant(K.epsilon())
 
-        losses: list[Tensor] = []
-        for y_true, y_pred in zip(y_true_tensor, y_pred_tensor):
-            # y: 実際の相対移動ベクトル（列ベクトル）
-            y = K.reshape(y_true, (2, 1))
+        # y: 実際の相対移動ベクトル（列ベクトル）
+        y = tf.linalg.matrix_transpose(y_true)
 
-            # θ: 推定した相対移動ベクトル（列ベクトル）
-            θ = K.reshape(y_pred[0:2], (2, 1))
+        # θ: 推定した相対移動ベクトル（列ベクトル）
+        θ = tf.linalg.matrix_transpose(y_true[:, 0:2])
 
-            # Σ = U * Λ * U^T のように分解する（ただし、Λは対角行列、Uは回転行列）
-            # Λ = [[λ1, 0], [0, λ2]]
-            # Λ^1 = [[1/λ1, 0], [0, 1/λ2]]
-            λ1 = y_pred[2]
-            λ2 = y_pred[3]
-            Λ = tf.linalg.diag([λ1, λ2])
-            Λ_inv = tf.linalg.diag([1.0 / (λ1 + epsilon), 1.0 / (λ2 + epsilon)])
+        # Σ = U * Λ * U^T のように分解する（ただし、Λは対角行列、Uは回転行列）
+        # Λ = [[λ1, 0], [0, λ2]]
+        # Λ^1 = [[1/λ1, 0], [0, 1/λ2]]
+        Λ = tf.linalg.diag(y_pred[:, 2:4])
+        Λ_inv = tf.linalg.diag(1.0 / (y_pred[:, 2:4] + epsilon))
 
-            # U = [[u1, u2], [u2, -u1]]
-            # 下記より、u1からUを求められる（NNはu1のみ出力する）
-            #   1. 1列目と2列目はそれぞれ単位ベクトル（=u2が一意に定まる）
-            #   2. 1列目と2列目は直交する
-            u1 = y_pred[4] + epsilon
-            u2 = K.sqrt(K.constant(1) - u1 ** 2)
-            U = K.variable([[u1, u2], [u2, -u1]])
+        # U = [[u1, u2], [u2, -u1]]
+        # 下記より、u1からUを求められる（NNはu1のみ出力する）
+        #   1. 1列目と2列目はそれぞれ単位ベクトル（=u2が一意に定まる）
+        #   2. 1列目と2列目は直交する
+        u1 = K.reshape(y_pred[:, 4], (y_pred.shape[0], 1))
+        u2 = K.reshape(y_pred[:, 5], (y_pred.shape[0], 1))
+        U = K.concatenate([K.reshape(K.concatenate([u1, u2]), (y_pred.shape[0], 2, 1)),
+                           K.reshape(K.concatenate([-u2, u1]), (y_pred.shape[0], 2, 1))])
 
-            # Σ = U * Λ * U^T
-            # Σ^-1 = U * Λ^1 * U^T
-            Σ = K.dot(K.dot(U, Λ), K.transpose(U))
-            Σ_inv = K.dot(K.dot(U, Λ_inv), K.transpose(U))
+        # Σ = U * Λ * U^T
+        # Σ^-1 = U * Λ^1 * U^T
+        Σ = tf.matmul(tf.matmul(U, Λ), tf.linalg.matrix_transpose(U)) + epsilon
+        Σ_inv = tf.matmul(tf.matmul(U, Λ_inv), tf.linalg.matrix_transpose(U)) + epsilon
+        det_Σ = Σ[:, 0, 0] * Σ[:, 1, 1] - Σ[:, 0, 1] * Σ[:, 1, 0]
 
-            loss = K.log((2 * np.pi) ** 2 * tf.linalg.det(Σ)) + \
-                   K.dot(K.dot(K.transpose(y - θ), Σ_inv), (y - θ))
-            losses.append(loss)
-
-        return K.mean(K.constant([loss.numpy() for loss in losses]))
+        return K.mean(
+            K.log((2 * np.pi) ** 2 * (det_Σ + epsilon)) + \
+            tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - θ), Σ_inv), (y - θ))
+        )
 
     @staticmethod
     def output_activation(y_pred: np.ndarray) -> Tensor:
@@ -112,10 +110,14 @@ class BaseNNet(metaclass=ABCMeta):
         出力層の活性化関数
         """
 
-        θ_x = y_pred[:, 0]
-        θ_y = y_pred[:, 1]
+        θ_x = K.sigmoid(y_pred[:, 0])
+        θ_y = K.sigmoid(y_pred[:, 1])
         λ1 = K.relu(y_pred[:, 2])
         λ2 = K.relu(y_pred[:, 3])
-        u1 = K.sigmoid(y_pred[:, 4])
+        u1 = y_pred[:, 4]
+        u2 = y_pred[:, 5]
+        u1_u2_vector_length = K.sqrt(u1 ** 2 + u2 ** 2)
+        u1 /= u1_u2_vector_length
+        u2 /= u1_u2_vector_length
 
-        return K.stack([θ_x, θ_y, λ1, λ2, u1], 1)
+        return K.stack([θ_x, θ_y, λ1, λ2, u1, u2], 1)
