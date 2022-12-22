@@ -39,7 +39,7 @@ class BaseNNet(metaclass=ABCMeta):
         self.model.compile(
             optimizer="adam",
             loss=self.loss,
-            metrics=[self.x_movement_amount_metric, self.y_movement_amount_metric],
+            # metrics=[self.x_movement_amount_metric, self.y_movement_amount_metric],
         )
 
     def load_weights(self, filename):
@@ -80,9 +80,8 @@ class BaseNNet(metaclass=ABCMeta):
 
         # Σ = U * Λ * U^T のように分解する（ただし、Λは対角行列、Uは回転行列）
         # Λ = [[λ1, 0], [0, λ2]]
-        # Λ^1 = [[1/λ1, 0], [0, 1/λ2]]
-        Λ = tf.linalg.diag(y_pred[:, 2:4])
-        Λ_inv = tf.linalg.diag(1.0 / (y_pred[:, 2:4] + epsilon))
+        # Λ^1 = [[1/λ1, 0], [0, 1/λ2]] = [[ξ1, 0], [0, ξ2]]
+        Λ_inv = tf.linalg.diag(y_pred[:, 2:4])
 
         # U = [[u1, u2], [u2, -u1]]
         # 下記より、u1からUを求められる（NNはu1のみ出力する）
@@ -90,17 +89,20 @@ class BaseNNet(metaclass=ABCMeta):
         #   2. 1列目と2列目は直交する
         u1 = K.reshape(y_pred[:, 4], (y_pred.shape[0], 1))
         u2 = K.reshape(y_pred[:, 5], (y_pred.shape[0], 1))
+
+        u1_u2_vector_length = K.sqrt(u1 ** 2 + u2 ** 2)
+        u1 /= u1_u2_vector_length
+        u2 /= u1_u2_vector_length
         U = K.concatenate([K.reshape(K.concatenate([u1, u2]), (y_pred.shape[0], 2, 1)),
                            K.reshape(K.concatenate([-u2, u1]), (y_pred.shape[0], 2, 1))])
 
         # Σ = U * Λ * U^T
         # Σ^-1 = U * Λ^1 * U^T
-        Σ = tf.matmul(tf.matmul(U, Λ), tf.linalg.matrix_transpose(U)) + epsilon
-        Σ_inv = tf.matmul(tf.matmul(U, Λ_inv), tf.linalg.matrix_transpose(U)) + epsilon
-        det_Σ = Σ[:, 0, 0] * Σ[:, 1, 1] - Σ[:, 0, 1] * Σ[:, 1, 0]
+        Σ_inv = tf.matmul(tf.matmul(U, Λ_inv), tf.linalg.matrix_transpose(U))
+        det_Σ = 1 / (Σ_inv[:, 0, 0] * Σ_inv[:, 1, 1] - Σ_inv[:, 0, 1] * Σ_inv[:, 1, 0])
 
         return K.mean(
-            K.log((2 * np.pi) ** 2 * (det_Σ + epsilon)) + \
+            K.log((2 * np.pi) ** 2 * det_Σ) + \
             tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - θ), Σ_inv), (y - θ))
         )
 
@@ -112,15 +114,12 @@ class BaseNNet(metaclass=ABCMeta):
 
         θ_x = y_pred[:, 0]
         θ_y = y_pred[:, 1]
-        λ1 = K.relu(y_pred[:, 2])
-        λ2 = K.relu(y_pred[:, 3])
+        ξ1 = K.relu(y_pred[:, 2])
+        ξ2 = K.relu(y_pred[:, 3])
         u1 = y_pred[:, 4]
         u2 = y_pred[:, 5]
-        u1_u2_vector_length = K.sqrt(u1 ** 2 + u2 ** 2)
-        u1 /= u1_u2_vector_length
-        u2 /= u1_u2_vector_length
 
-        return K.stack([θ_x, θ_y, λ1, λ2, u1, u2], 1)
+        return K.stack([θ_x, θ_y, ξ1, ξ2, u1, u2], 1)
 
     @staticmethod
     def x_movement_amount_metric(y_true: Tensor, y_pred: Tensor) -> Tensor:

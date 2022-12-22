@@ -76,7 +76,8 @@ class DrivingRecordRepository:
             driving_record_json_lines: list[str] = f.readlines()
 
         driving_records: list[DrivingRecord] = []
-        for src in tqdm.tqdm(driving_record_json_lines):
+        # TODO: lossのデバッグ用に件数を絞っているので、全件訓練に回すよう修正
+        for src in tqdm.tqdm(driving_record_json_lines[:5]):
             try:
                 driving_records.append(DrivingRecord(json.loads(src)))
             except (FileNotFoundError, ImportError, ValueError, KeyError):
