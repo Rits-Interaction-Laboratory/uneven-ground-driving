@@ -19,7 +19,7 @@ class BaseNNet(metaclass=ABCMeta):
 
     def __init__(self):
         # TODO: 削除する
-        tf.config.run_functions_eagerly(True)
+        # tf.config.run_functions_eagerly(True)
         self.build_model()
         # self.model.summary()
 
@@ -72,13 +72,13 @@ class BaseNNet(metaclass=ABCMeta):
         # 分母が極端に小さくなることを防ぐためのオフセット
         epsilon = K.constant(K.epsilon())
 
-        # y: 実際の相対移動ベクトル（列ベクトル）
+        # y = [xの移動量, yの移動量] ^ T
         y = K.reshape(y_true[:, 0:2], (y_true.shape[0], 2, 1))
 
-        # θ: 推定した相対移動ベクトル（列ベクトル）
-        θ = K.reshape(y_pred[:, 0:2], (y_pred.shape[0], 2, 1))
+        # ŷ = [推定したxの移動量, 推定したyの移動量] ^ T
+        ŷ = K.reshape(y_pred[:, 0:2], (y_pred.shape[0], 2, 1))
 
-        # Σ = U * Λ * U^T のように分解する（ただし、Λは対角行列、Uは回転行列）
+        # Σ = U * Λ * U^T のように分解する（Λは対角行列、Uは回転行列）
         # Λ = [[λ1, 0], [0, λ2]]
         # Λ^1 = [[1/λ1, 0], [0, 1/λ2]] = [[ξ1, 0], [0, ξ2]]
         Λ_inv = tf.linalg.diag(y_pred[:, 2:4])
@@ -103,7 +103,7 @@ class BaseNNet(metaclass=ABCMeta):
 
         return K.mean(
             K.log((2 * np.pi) ** 2 * det_Σ) + \
-            tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - θ), Σ_inv), (y - θ))
+            tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), Σ_inv), (y - ŷ))
         )
 
     @staticmethod
@@ -112,14 +112,14 @@ class BaseNNet(metaclass=ABCMeta):
         出力層の活性化関数
         """
 
-        θ_x = y_pred[:, 0]
-        θ_y = y_pred[:, 1]
+        ŷ1 = y_pred[:, 0]
+        ŷ2 = y_pred[:, 1]
         ξ1 = K.relu(y_pred[:, 2])
         ξ2 = K.relu(y_pred[:, 3])
         u1 = y_pred[:, 4]
         u2 = y_pred[:, 5]
 
-        return K.stack([θ_x, θ_y, ξ1, ξ2, u1, u2], 1)
+        return K.stack([ŷ1, ŷ2, ξ1, ξ2, u1, u2], 1)
 
     @staticmethod
     def x_movement_amount_metric(y_true: Tensor, y_pred: Tensor) -> Tensor:
@@ -127,18 +127,18 @@ class BaseNNet(metaclass=ABCMeta):
         xの移動量の評価関数
         """
 
-        y_1 = y_true[:, 0]
-        θ_1 = y_pred[:, 0]
+        y1 = y_true[:, 0]
+        ŷ1 = y_pred[:, 0]
 
-        return metrics.mean_absolute_error(y_1, θ_1)
+        return metrics.mean_absolute_error(y1, ŷ1)
 
     @staticmethod
     def y_movement_amount_metric(y_true: Tensor, y_pred: Tensor) -> Tensor:
         """
-        xの移動量の評価関数
+        yの移動量の評価関数
         """
 
         y_2 = y_true[:, 1]
-        θ_2 = y_pred[:, 1]
+        ŷ_2 = y_pred[:, 1]
 
-        return metrics.mean_absolute_error(y_2, θ_2)
+        return metrics.mean_absolute_error(y_2, ŷ_2)
