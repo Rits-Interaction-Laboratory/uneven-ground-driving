@@ -16,5 +16,5 @@ class ResNet(BaseNNet):
 
         top_model = Sequential()
         top_model.add(layers.Flatten(input_shape=resnet.output_shape[1:]))
-        top_model.add(layers.Dense(6, activation=self.output_activation))
+        top_model.add(layers.Dense(5, activation=self.output_activation))
         self.model = Model(inputs=resnet.inputs, outputs=top_model(resnet.outputs))

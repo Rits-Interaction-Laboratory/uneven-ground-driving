@@ -5,7 +5,7 @@ import numpy as np
 
 from src.training.driving_record import DrivingRecord, DrivingRecordRepository
 from src.training.nnet.base_nnet import BaseNNet
-from src.training.nnet.cnn import CNN
+from src.training.nnet.resnet import ResNet
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -13,8 +13,7 @@ logging.basicConfig(
     format='[%(levelname)s] %(asctime)s --- %(message)s',
 )
 
-# TODO: ResNETに変更
-nnet: BaseNNet = CNN()
+nnet: BaseNNet = ResNet()
 driving_record_repository: DrivingRecordRepository = DrivingRecordRepository()
 
 

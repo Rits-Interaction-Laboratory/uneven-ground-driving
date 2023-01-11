@@ -25,4 +25,4 @@ class CNN(BaseNNet):
         self.model.add(layers.Dense(1024))
         self.model.add(layers.Activation('relu'))
 
-        self.model.add(layers.Dense(6, activation='softmax'))
+        self.model.add(layers.Dense(5, activation=self.output_activation))
