@@ -175,3 +175,5 @@ data/
 !data/.gitkeep
 media/
 .ros
+analysis/
+!analysis/.gitkeep

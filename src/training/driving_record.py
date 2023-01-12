@@ -78,7 +78,11 @@ class DrivingRecordRepository:
         driving_records: list[DrivingRecord] = []
         for src in tqdm.tqdm(driving_record_json_lines):
             try:
-                driving_records.append(DrivingRecord(json.loads(src)))
+                driving_record = DrivingRecord(json.loads(src))
+
+                # Xの移動量が負の記録は除去する（=前進したはずが後ろに移動したもの）
+                if (driving_record.get_movement_amount()[0]) >= 0:
+                    driving_records.append(DrivingRecord(json.loads(src)))
             except (FileNotFoundError, ImportError, ValueError, KeyError):
                 pass
 

@@ -8,6 +8,7 @@ keras-preprocessing = "*"
 pillow = "*"
 tqdm = "*"
 numpy = "*"
+matplotlib = "*"
 
 [dev-packages]
 flake8 = "*"

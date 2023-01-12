@@ -2,6 +2,7 @@ import logging
 import sys
 
 import numpy as np
+from matplotlib import pyplot as plt
 
 from src.training.driving_record import DrivingRecord, DrivingRecordRepository
 from src.training.nnet.base_nnet import BaseNNet
@@ -32,6 +33,23 @@ def output_stats(data: list[DrivingRecord]):
     covariance_matrix: np.ndarray = np.cov(movement_amounts, rowvar=False)
     for line in str(covariance_matrix).split('\n'):
         logging.info(line)
+
+    # X、Yの移動量のヒストグラムを生成
+    x_movement_amounts = [movement_amount[0] for movement_amount in movement_amounts]
+    y_movement_amounts = [movement_amount[1] for movement_amount in movement_amounts]
+    
+    plt.figure()
+    plt.hist(x_movement_amounts, bins=100)
+    plt.savefig("./analysis/x_hist.png")
+
+    plt.figure()
+    plt.hist(y_movement_amounts, bins=100)
+    plt.savefig("./analysis/y_hist.png")
+
+    plt.figure()
+    plt.hist2d(x_movement_amounts, y_movement_amounts, bins=100, cmin=1)
+    plt.colorbar()
+    plt.savefig("./analysis/xy_hist.png")
 
 
 logging.info('訓練データセットをロード開始')
