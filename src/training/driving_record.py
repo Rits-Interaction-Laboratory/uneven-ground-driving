@@ -15,7 +15,7 @@ class DrivingRecord:
     def __init__(self, src: dict):
         self.image_filename: str = os.path.expanduser('~/.ros/' + src['image_filename'])
         self.image: np.ndarray = tf.image.resize(img_to_array(load_img(self.image_filename, color_mode="grayscale")),
-                                                 (64, 64))
+                                                 (128, 128))
         self.odometries = [self.__Odometry(odometry_src) for odometry_src in src['odometries']]
 
     def get_movement_amount(self) -> tuple[float, float]:

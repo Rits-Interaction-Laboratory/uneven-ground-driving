@@ -38,7 +38,7 @@ class BaseNNet(metaclass=ABCMeta):
         self.model.compile(
             optimizer="adam",
             loss=self.loss,
-            metrics=[self.x_movement_amount_metric, self.y_movement_amount_metric],
+            metrics=[self.x_mae, self.y_mae],
         )
 
     def load_weights(self, filename):
@@ -54,11 +54,11 @@ class BaseNNet(metaclass=ABCMeta):
         """
 
         self.compile_model()
-        self.model.fit(
+        return self.model.fit(
             x=x,
             y=y,
             epochs=50,
-            batch_size=128,
+            batch_size=64,
             validation_split=0.1,
         )
 
@@ -96,6 +96,9 @@ class BaseNNet(metaclass=ABCMeta):
         Σ_inv = tf.matmul(tf.matmul(U, Λ_inv), tf.linalg.matrix_transpose(U))
         det_Σ = 1.0 / (tf.linalg.det(Σ_inv) + epsilon)
 
+        # return tf.reduce_mean(
+        #     tf.losses.mean_squared_error(y, ŷ)
+        # )
         return tf.reduce_mean(
             tf.math.log((2 * np.pi) ** 2 * det_Σ) + \
             tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), Σ_inv), (y - ŷ))
@@ -116,7 +119,7 @@ class BaseNNet(metaclass=ABCMeta):
         return tf.stack([ŷ1, ŷ2, ξ1, ξ2, θ], axis=1)
 
     @staticmethod
-    def x_movement_amount_metric(y_true: Tensor, y_pred: Tensor) -> Tensor:
+    def x_mae(y_true: Tensor, y_pred: Tensor) -> Tensor:
         """
         xの移動量の評価関数
         """
@@ -127,7 +130,7 @@ class BaseNNet(metaclass=ABCMeta):
         return metrics.mean_absolute_error(y1, ŷ1)
 
     @staticmethod
-    def y_movement_amount_metric(y_true: Tensor, y_pred: Tensor) -> Tensor:
+    def y_mae(y_true: Tensor, y_pred: Tensor) -> Tensor:
         """
         yの移動量の評価関数
         """
@@ -136,3 +139,10 @@ class BaseNNet(metaclass=ABCMeta):
         ŷ_2 = y_pred[:, 1]
 
         return metrics.mean_absolute_error(y_2, ŷ_2)
+
+    def predict(self, x: np.ndarray):
+        """
+        相対位置ベクトルを推定
+        """
+
+        return self.model.predict(x)
