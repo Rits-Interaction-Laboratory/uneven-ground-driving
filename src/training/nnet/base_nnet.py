@@ -1,9 +1,11 @@
 from abc import ABCMeta, abstractmethod
+from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
 import tensorflow.python.keras.backend as K
 from tensorflow.python.keras import Model, metrics
+from tensorflow.python.keras.callbacks import CSVLogger, ModelCheckpoint
 from tensorflow.python.types.core import Tensor
 
 
@@ -53,6 +55,23 @@ class BaseNNet(metaclass=ABCMeta):
         訓練
         """
 
+        # チェックポイントを保存するコールバックを定義
+        checkpoint_filename: str = "./ckpt/{epoch}.h5"
+        checkpoint_callback = ModelCheckpoint(
+            filepath=checkpoint_filename,
+            verbose=1,
+            save_weights_only=True
+        )
+        self.model.save_weights(checkpoint_filename.format(epoch=0))
+
+        # ロギングするコールバックを定義
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        logging_callback = CSVLogger(
+            filename=f"./analysis/history_{timestamp}.csv",
+            separator=",",
+            append=True,
+        )
+
         self.compile_model()
         return self.model.fit(
             x=x,
@@ -60,6 +79,7 @@ class BaseNNet(metaclass=ABCMeta):
             epochs=50,
             batch_size=64,
             validation_split=0.1,
+            callbacks=[checkpoint_callback, logging_callback],
         )
 
     @staticmethod
