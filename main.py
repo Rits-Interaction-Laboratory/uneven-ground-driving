@@ -24,8 +24,10 @@ def output_stats(data: list[DrivingRecord]):
 
     movement_amounts: list[tuple[float, float]] = [driving_record.get_movement_amount() for driving_record in data]
     logging.info(f'件数: {len(movement_amounts)}')
-    logging.info(f'xの平均: {np.mean([movement_amount[0] for movement_amount in movement_amounts])}')
-    logging.info(f'yの平均: {np.mean([movement_amount[1] for movement_amount in movement_amounts])}')
+    logging.info(f' x の平均: {np.mean([movement_amount[0] for movement_amount in movement_amounts])}')
+    logging.info(f' y の平均: {np.mean([movement_amount[1] for movement_amount in movement_amounts])}')
+    logging.info(f'|x|の平均: {np.mean([abs(movement_amount[0]) for movement_amount in movement_amounts])}')
+    logging.info(f'|y|の平均: {np.mean([abs(movement_amount[1]) for movement_amount in movement_amounts])}')
 
     covariance_matrix: np.ndarray = np.cov(movement_amounts, rowvar=False)
     for line in str(covariance_matrix).split('\n'):
