@@ -171,9 +171,11 @@ src/turtlebot3_msgs
 src/turtlebot3_simulations
 
 # Others
-data/
-!data/.gitkeep
 media/
 .ros
+data/
+!data/.gitkeep
 analysis/
 !analysis/.gitkeep
+ckpt/
+!ckpt/.gitkeep
