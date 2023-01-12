@@ -50,7 +50,7 @@ class BaseNNet(metaclass=ABCMeta):
 
         self.model.load_weights(filename)
 
-    def train(self, x: np.ndarray, y: np.ndarray):
+    def train(self, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray):
         """
         訓練
         """
@@ -74,11 +74,11 @@ class BaseNNet(metaclass=ABCMeta):
 
         self.compile_model()
         return self.model.fit(
-            x=x,
-            y=y,
+            x=x_train,
+            y=y_train,
             epochs=50,
             batch_size=64,
-            validation_split=0.1,
+            validation_data=(x_test, y_test),
             callbacks=[checkpoint_callback, logging_callback],
         )
 

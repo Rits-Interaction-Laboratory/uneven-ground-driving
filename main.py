@@ -54,13 +54,13 @@ def output_stats(data: list[DrivingRecord]):
     plt.savefig("./analysis/histogram_xy.png")
 
 
-def output_predict_results(data: list[DrivingRecord]):
+def output_predict_results(data: list[DrivingRecord], label: str):
     """
     推定結果を出力
     """
 
     predict_results = nnet.predict(
-        np.array([driving_record.image for driving_record in driving_records], dtype=np.float32))
+        np.array([driving_record.image for driving_record in data], dtype=np.float32))
 
     pred_x_movement_amounts = predict_results[:, 0]
     pred_y_movement_amounts = predict_results[:, 1]
@@ -72,14 +72,44 @@ def output_predict_results(data: list[DrivingRecord]):
     plt.colorbar()
     plt.xlabel("ŷ_0")
     plt.ylabel("y_0")
-    plt.savefig("./analysis/heatmap_x.png")
+    plt.savefig(f"./analysis/{label}_heatmap_x.png")
 
     plt.figure()
     plt.hist2d(pred_y_movement_amounts, true_y_movement_amounts, bins=100, cmin=1)
     plt.colorbar()
     plt.xlabel("ŷ_1")
     plt.ylabel("y_1")
-    plt.savefig("./analysis/heatmap_y.png")
+    plt.savefig(f"./analysis/{label}_heatmap_y.png")
+
+
+def output_train_history(history):
+    """
+    訓練履歴を出力
+    """
+
+    plt.figure()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'])
+    plt.savefig("./analysis/history_loss.png")
+
+    plt.figure()
+    plt.plot(history.history['x_mae'])
+    plt.plot(history.history['val_x_mae'])
+    plt.ylabel('|y_0 - ŷ_0|')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'])
+    plt.savefig("./analysis/history_x_mae.png")
+
+    plt.figure()
+    plt.plot(history.history['y_mae'])
+    plt.plot(history.history['val_y_mae'])
+    plt.ylabel('|y_1 - ŷ_1|')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'])
+    plt.savefig("./analysis/history_y_mae.png")
 
 
 logging.info('訓練データセットをロード開始')
@@ -88,18 +118,19 @@ output_stats(driving_records)
 x: np.ndarray = np.array([driving_record.image for driving_record in driving_records], dtype=np.float32)
 y: np.ndarray = np.array([driving_record.get_movement_amount() for driving_record in driving_records],
                          dtype=np.float32)
-# y = (y - y.min()) / (y.max() - y.min())
+
+split_index: int = int(len(driving_records) // 10)
+x_train = x[split_index:]
+x_test = x[0:split_index]
+y_train = y[split_index:]
+y_test = y[0:split_index]
 
 logging.info('訓練開始')
-history = nnet.train(x, y)
+history = nnet.train(x_train, y_train, x_test, y_test)
 
 # 訓練履歴をプロット
-plt.figure()
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'val'])
-plt.savefig("./analysis/loss_history.png")
+output_train_history(history)
 
-output_predict_results(driving_records)
+# 推定結果をプロット
+output_predict_results(driving_records[split_index:], "train")
+output_predict_results(driving_records[0:split_index], "test")
