@@ -113,6 +113,7 @@ class BaseNNet(metaclass=ABCMeta):
 
         # Σ = U * Λ * U^T
         # Σ^-1 = U * Λ^1 * U^T
+        # FIXME: InvalidArgumentError
         Σ_inv = tf.matmul(tf.matmul(U, Λ_inv), tf.linalg.matrix_transpose(U))
         det_Σ = 1.0 / (tf.linalg.det(Σ_inv) + epsilon)
 

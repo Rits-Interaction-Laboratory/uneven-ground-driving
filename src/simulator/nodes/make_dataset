@@ -70,6 +70,7 @@ def save_measured_result():
 
     json_str = json.dumps({
         'image_filename': context_holder.image_filename,
+        'image_npy_filename': context_holder.image_npy_filename,
         'odometries': [odometry.to_json() for odometry in context_holder.get_odometry_histories()],
     })
     if not Config.IS_DRY_RUN:
@@ -100,11 +101,13 @@ def depth_image_callback(msg: Image):
     # rospy.loginfo('Depth image is received from `/camera/depth/image_raw` topic.')
 
     try:
-        depth_image = cv_bridge.imgmsg_to_cv2(msg)
-        depth_image = np.array(depth_image, dtype=np.float32)
-        cv2.normalize(depth_image, depth_image, 0, 1, cv2.NORM_MINMAX)
-        depth_image *= 255
+        # 32FC1でエンコードされている(各ピクセルが32bit)
+        depth_image: np.ndarray = cv_bridge.imgmsg_to_cv2(msg)
+        np.save(context_holder.image_npy_filename, depth_image)
         if not Config.IS_DRY_RUN:
+            depth_image = np.array(depth_image, dtype=np.float32)
+            cv2.normalize(depth_image, depth_image, 0, 1, cv2.NORM_MINMAX)
+            depth_image *= 255
             cv2.imwrite(context_holder.image_filename, depth_image)
     except CvBridgeError:
         rospy.logerr('Failed to save depth image.')
@@ -113,6 +116,7 @@ def depth_image_callback(msg: Image):
 if __name__ == "__main__":
     os.makedirs(f'{Config.BASE_RESULT_PATH}', exist_ok=True)
     os.makedirs(f'{Config.IMAGES_PATH}', exist_ok=True)
+    os.makedirs(f'{Config.IMAGE_NPY_PATH}', exist_ok=True)
 
     rospy.init_node('simulator')
     twist_topic = rospy.Publisher('cmd_vel', Twist, queue_size=10)

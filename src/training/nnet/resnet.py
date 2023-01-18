@@ -11,7 +11,7 @@ class ResNet(BaseNNet):
         モデルをビルド
         """
 
-        input_tensor = layers.Input(shape=(128, 128, 1))
+        input_tensor = layers.Input(shape=(500, 500, 1))
         resnet = ResNet50V2(weights=None, input_tensor=input_tensor, include_top=False)
 
         top_model = Sequential()

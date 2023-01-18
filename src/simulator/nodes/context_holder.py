@@ -41,4 +41,8 @@ class ContextHolder:
 
     @property
     def image_filename(self) -> str:
-        return f'{Config.IMAGES_PATH}/{self.timestamp}.jpeg'
+        return f'{Config.IMAGES_PATH}/{self.timestamp}.png'
+
+    @property
+    def image_npy_filename(self) -> str:
+        return f'{Config.IMAGE_NPY_PATH}/{self.timestamp}.npy'

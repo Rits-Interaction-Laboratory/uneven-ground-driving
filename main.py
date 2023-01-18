@@ -51,6 +51,8 @@ def output_stats(data: list[DrivingRecord]):
     plt.figure()
     plt.hist2d(x_movement_amounts, y_movement_amounts, bins=100, cmin=1)
     plt.colorbar()
+    plt.xlabel("x")
+    plt.ylabel("y")
     plt.savefig("./analysis/histogram_xy.png")
 
 

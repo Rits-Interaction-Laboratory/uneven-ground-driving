@@ -9,6 +9,11 @@ class Config:
     画像を保存するパス
     """
 
+    IMAGE_NPY_PATH: str = f'{BASE_RESULT_PATH}/image_npys'
+    """
+    画像のnpyファイルを保存するパス
+    """
+
     MEASURED_RESULT_FILENAME: str = f'{BASE_RESULT_PATH}/result.jsonl'
     """
     測定結果を保存するファイル名

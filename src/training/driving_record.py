@@ -2,9 +2,7 @@ import json
 import os
 
 import numpy as np
-import tensorflow as tf
 import tqdm
-from keras_preprocessing.image import img_to_array, load_img
 
 
 class DrivingRecord:
@@ -14,8 +12,8 @@ class DrivingRecord:
 
     def __init__(self, src: dict):
         self.image_filename: str = os.path.expanduser('~/.ros/' + src['image_filename'])
-        self.image: np.ndarray = tf.image.resize(img_to_array(load_img(self.image_filename, color_mode="grayscale")),
-                                                 (128, 128))
+        self.image_npy_filename: str = os.path.expanduser('~/.ros/' + src['image_npy_filename'])
+        self.image: np.ndarray = np.load(self.image_npy_filename).reshape((500, 500, 1))
         self.odometries = [self.__Odometry(odometry_src) for odometry_src in src['odometries']]
 
     def get_movement_amount(self) -> tuple[float, float]:
@@ -76,7 +74,7 @@ class DrivingRecordRepository:
             driving_record_json_lines: list[str] = f.readlines()
 
         driving_records: list[DrivingRecord] = []
-        for src in tqdm.tqdm(driving_record_json_lines):
+        for src in tqdm.tqdm(driving_record_json_lines[:5]):
             try:
                 driving_record = DrivingRecord(json.loads(src))
 
