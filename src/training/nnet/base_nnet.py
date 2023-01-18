@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.python.keras.backend as K
 from tensorflow.python.keras import Model, metrics
-from tensorflow.python.keras.callbacks import CSVLogger, ModelCheckpoint
+from tensorflow.python.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
 from tensorflow.python.types.core import Tensor
 
 
@@ -72,14 +72,17 @@ class BaseNNet(metaclass=ABCMeta):
             append=True,
         )
 
+        # early stopping
+        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=3, verbose=0, mode='auto')
+
         self.compile_model()
         return self.model.fit(
             x=x_train,
             y=y_train,
-            epochs=50,
+            epochs=200,
             batch_size=64,
             validation_data=(x_test, y_test),
-            callbacks=[checkpoint_callback, logging_callback],
+            callbacks=[checkpoint_callback, logging_callback, early_stopping_callback],
         )
 
     @staticmethod
