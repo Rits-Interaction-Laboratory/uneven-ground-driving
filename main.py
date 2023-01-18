@@ -3,6 +3,7 @@ import os
 import sys
 
 import numpy as np
+import tensorflow.python.keras.backend as K
 from matplotlib import pyplot as plt
 
 from src.training.driving_record import DrivingRecord, DrivingRecordRepository
@@ -73,16 +74,40 @@ def output_predict_results(data: list[DrivingRecord], label: str):
     plt.figure()
     plt.hist2d(pred_x_movement_amounts, true_x_movement_amounts, bins=100, cmin=1)
     plt.colorbar()
-    plt.xlabel("ŷ_0")
-    plt.ylabel("y_0")
+    plt.xlabel("ŷ_1")
+    plt.ylabel("y_1")
     plt.savefig(f"./analysis/{label}_heatmap_x.png")
 
     plt.figure()
     plt.hist2d(pred_y_movement_amounts, true_y_movement_amounts, bins=100, cmin=1)
     plt.colorbar()
-    plt.xlabel("ŷ_1")
-    plt.ylabel("y_1")
+    plt.xlabel("ŷ_2")
+    plt.ylabel("y_2")
     plt.savefig(f"./analysis/{label}_heatmap_y.png")
+
+    Σ = nnet.get_Σ(predict_results)
+    pred_σ_x_list = K.sqrt(Σ[:, 0, 0])
+    pred_σ_y_list = K.sqrt(Σ[:, 1, 1])
+
+    x_errors = []
+    y_errors = []
+    for i in range(len(predict_results)):
+        x_errors.append(abs(true_x_movement_amounts[i] - pred_x_movement_amounts[i]))
+        y_errors.append(abs(true_y_movement_amounts[i] - pred_y_movement_amounts[i]))
+
+    plt.figure()
+    plt.hist2d(pred_σ_x_list, x_errors, bins=100, cmin=1)
+    plt.colorbar()
+    plt.xlabel("σ_1")
+    plt.ylabel("|ŷ_1 - y_1|")
+    plt.savefig(f"./analysis/{label}_heatmap_σ_x_error.png")
+
+    plt.figure()
+    plt.hist2d(pred_σ_y_list, y_errors, bins=100, cmin=1)
+    plt.colorbar()
+    plt.xlabel("σ_2")
+    plt.ylabel("|ŷ_2 - y_2|")
+    plt.savefig(f"./analysis/{label}_heatmap_σ_y_error.png")
 
 
 def output_train_history(history):
@@ -101,7 +126,7 @@ def output_train_history(history):
     plt.figure()
     plt.plot(history.history['x_mae'])
     plt.plot(history.history['val_x_mae'])
-    plt.ylabel('|y_0 - ŷ_0|')
+    plt.ylabel('|y_1 - ŷ_1|')
     plt.xlabel('epoch')
     plt.legend(['train', 'val'])
     plt.savefig("./analysis/history_x_mae.png")
@@ -109,7 +134,7 @@ def output_train_history(history):
     plt.figure()
     plt.plot(history.history['y_mae'])
     plt.plot(history.history['val_y_mae'])
-    plt.ylabel('|y_1 - ŷ_1|')
+    plt.ylabel('|y_2 - ŷ_2|')
     plt.xlabel('epoch')
     plt.legend(['train', 'val'])
     plt.savefig("./analysis/history_y_mae.png")
