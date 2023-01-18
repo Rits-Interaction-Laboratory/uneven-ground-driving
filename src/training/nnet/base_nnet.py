@@ -1,11 +1,10 @@
 from abc import ABCMeta, abstractmethod
-from datetime import datetime
 
 import numpy as np
 import tensorflow as tf
 import tensorflow.python.keras.backend as K
 from tensorflow.python.keras import Model, metrics
-from tensorflow.python.keras.callbacks import CSVLogger, ModelCheckpoint, EarlyStopping
+from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
 from tensorflow.python.types.core import Tensor
 
 
@@ -22,7 +21,7 @@ class BaseNNet(metaclass=ABCMeta):
     def __init__(self):
         # tf.config.run_functions_eagerly(True)
         self.build_model()
-        # self.model.summary()
+        self.model.summary()
 
     @abstractmethod
     def build_model(self):
@@ -64,16 +63,8 @@ class BaseNNet(metaclass=ABCMeta):
         )
         self.model.save_weights(checkpoint_filename.format(epoch=0))
 
-        # ロギングするコールバックを定義
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        logging_callback = CSVLogger(
-            filename=f"./analysis/history_{timestamp}.csv",
-            separator=",",
-            append=True,
-        )
-
         # early stopping
-        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=1, verbose=0, mode='auto')
+        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=2, verbose=0, mode='auto')
 
         self.compile_model()
         return self.model.fit(
@@ -82,7 +73,7 @@ class BaseNNet(metaclass=ABCMeta):
             epochs=50,
             batch_size=64,
             validation_data=(x_test, y_test),
-            callbacks=[checkpoint_callback, logging_callback, early_stopping_callback],
+            callbacks=[checkpoint_callback, early_stopping_callback],
         )
 
     def loss(self, y_true: Tensor, y_pred: Tensor) -> Tensor:
@@ -98,10 +89,7 @@ class BaseNNet(metaclass=ABCMeta):
 
         Σ = self.get_Σ(y_pred)
 
-        # return tf.reduce_mean(
-        #     tf.losses.mean_squared_error(y, ŷ)
-        # )
-        return K.mean(
+        return tf.reduce_mean(
             tf.math.log((2 * np.pi) ** 2 * tf.linalg.det(Σ))
             + tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), tf.linalg.pinv(Σ)), (y - ŷ))
         )

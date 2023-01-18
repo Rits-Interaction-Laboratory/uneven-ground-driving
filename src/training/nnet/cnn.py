@@ -1,3 +1,4 @@
+from tensorflow.keras.layers import BatchNormalization
 from tensorflow.python.keras import Sequential, layers
 
 from src.training.nnet.base_nnet import BaseNNet
@@ -11,18 +12,23 @@ class CNN(BaseNNet):
 
         self.model = Sequential()
 
-        self.model.add(layers.Conv2D(32, 3, input_shape=(128, 128, 1)))
-        self.model.add(layers.Activation('relu'))
-        self.model.add(layers.Conv2D(32, 3))
-        self.model.add(layers.Activation('relu'))
-        self.model.add(layers.MaxPool2D(pool_size=(2, 2)))
+        # input layer
+        self.model.add(layers.Input(shape=(128, 128, 1)))
 
-        self.model.add(layers.Conv2D(64, 3))
-        self.model.add(layers.Activation('relu'))
-        self.model.add(layers.MaxPool2D(pool_size=(2, 2)))
+        # convolution 1st layer
+        self.model.add(layers.Conv2D(32, (3, 3), padding="same", activation="relu"))
+        self.model.add(BatchNormalization())
+        self.model.add(layers.MaxPool2D())
 
+        # convolution 2nd layer
+        self.model.add(layers.Conv2D(32, (3, 3), padding="same", activation="relu"))
+        self.model.add(BatchNormalization())
+        self.model.add(layers.MaxPool2D())
+
+        # fully connected 1st layer
         self.model.add(layers.Flatten())
-        self.model.add(layers.Dense(1024))
-        self.model.add(layers.Activation('relu'))
+        self.model.add(layers.Dense(64, activation="relu"))
+        self.model.add(BatchNormalization())
 
+        # fully connected final layer
         self.model.add(layers.Dense(5, activation=self.output_activation))

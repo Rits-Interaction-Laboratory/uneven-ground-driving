@@ -150,6 +150,9 @@ history = nnet.train(x_train, y_train, x_test, y_test)
 # 訓練履歴をプロット
 output_train_history(history)
 
-# 推定結果をプロット
+# 最良エポックでの推定結果をプロット
+best_epoch = history.history['val_loss'].index(min(history.history['val_loss'])) + 1
+logging.info(f"最良エポック：{best_epoch}")
+nnet.load_weights(f"ckpt/{best_epoch}.h5")
 output_predict_results(driving_records[split_index:], "train")
 output_predict_results(driving_records[0:split_index], "test")
