@@ -95,10 +95,9 @@ class BaseNNet(metaclass=ABCMeta):
         ŷ = tf.expand_dims(y_pred[:, 0:2], axis=-1)
 
         # Σ = U * Λ * U^T のように分解する（Λは対角行列、Uは回転行列）
-        # Λ = [[λ1, 0], [0, λ2]]
-        # Λ^1 = [[1/λ1, 0], [0, 1/λ2]] = [[ξ1, 0], [0, ξ2]]
-        # ξ = e^ρ として変数変換（ξ>=0をReLUで実現するのは悪手なので、NNにρを出力させることで解決している）
-        Λ_inv = tf.linalg.diag(tf.exp(y_pred[:, 2:4]))
+        # Λ = [[λ1, 0], [0, λ2]] = [[e^ρ1, 0], [0, e^ρ2]]
+        # λ>=0を満たすために、λ=e^ρで変数変換する（NNはρを出力）
+        Λ = tf.linalg.diag(tf.exp(y_pred[:, 2:4]))
 
         # U = [[cos(θ), -sin(θ)], [sin(θ), cos(θ)]]
         θ = y_pred[:, 4]
@@ -110,16 +109,14 @@ class BaseNNet(metaclass=ABCMeta):
         ], axis=-1)
 
         # Σ = U * Λ * U^T
-        # Σ^-1 = U * Λ^1 * U^T
-        Σ_inv = tf.matmul(tf.matmul(U, Λ_inv), tf.linalg.matrix_transpose(U))
-        det_Σ = 1.0 / (tf.linalg.det(Σ_inv))
+        Σ = tf.linalg.matmul(tf.linalg.matmul(U, Λ), tf.linalg.matrix_transpose(U))
 
         # return tf.reduce_mean(
         #     tf.losses.mean_squared_error(y, ŷ)
         # )
         return tf.reduce_mean(
-            tf.math.log((2 * np.pi) ** 2 * det_Σ) + \
-            tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), Σ_inv), (y - ŷ))
+            tf.math.log((2 * np.pi) ** 2 * tf.linalg.det(Σ))
+            + tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), tf.linalg.pinv(Σ)), (y - ŷ))
         )
 
     @staticmethod

@@ -1,5 +1,5 @@
 [flake8]
-ignore = E125,E126,E127,E402,W293,C901
+ignore = E125,E126,E127,E402,W293,W503,C901
 exclude = .venv,__pycache__,old,build,dist
 max-line-length = 150
 max-complexity = 10
