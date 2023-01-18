@@ -74,7 +74,7 @@ class DrivingRecordRepository:
             driving_record_json_lines: list[str] = f.readlines()
 
         driving_records: list[DrivingRecord] = []
-        for src in tqdm.tqdm(driving_record_json_lines[:5]):
+        for src in tqdm.tqdm(driving_record_json_lines):
             try:
                 driving_record = DrivingRecord(json.loads(src))
 
