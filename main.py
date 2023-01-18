@@ -63,6 +63,7 @@ def output_predict_results(data: list[DrivingRecord], label: str):
 
     predict_results = nnet.predict(
         np.array([driving_record.image for driving_record in data], dtype=np.float32))
+    np.save("./analysis/predict_results.npy", predict_results)
 
     pred_x_movement_amounts = predict_results[:, 0]
     pred_y_movement_amounts = predict_results[:, 1]
@@ -112,6 +113,22 @@ def output_train_history(history):
     plt.xlabel('epoch')
     plt.legend(['train', 'val'])
     plt.savefig("./analysis/history_y_mae.png")
+
+    plt.figure()
+    plt.plot(history.history['σ_x_mae'])
+    plt.plot(history.history['val_σ_x_mae'])
+    plt.ylabel('||y_1 - ŷ_1| - σ_y1|')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'])
+    plt.savefig("./analysis/history_σ_x_mae.png")
+
+    plt.figure()
+    plt.plot(history.history['σ_y_mae'])
+    plt.plot(history.history['val_σ_y_mae'])
+    plt.ylabel('||y_2 - ŷ_2| - σ_y2|')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'val'])
+    plt.savefig("./analysis/history_σ_y_mae.png")
 
 
 logging.info('訓練データセットをロード開始')

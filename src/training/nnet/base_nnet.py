@@ -40,7 +40,7 @@ class BaseNNet(metaclass=ABCMeta):
         self.model.compile(
             optimizer="adam",
             loss=self.loss,
-            metrics=[self.x_mae, self.y_mae],
+            metrics=[self.x_mae, self.y_mae, self.σ_x_mae, self.σ_y_mae],
         )
 
     def load_weights(self, filename):
@@ -73,20 +73,19 @@ class BaseNNet(metaclass=ABCMeta):
         )
 
         # early stopping
-        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=3, verbose=0, mode='auto')
+        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=1, verbose=0, mode='auto')
 
         self.compile_model()
         return self.model.fit(
             x=x_train,
             y=y_train,
-            epochs=200,
+            epochs=50,
             batch_size=64,
             validation_data=(x_test, y_test),
             callbacks=[checkpoint_callback, logging_callback, early_stopping_callback],
         )
 
-    @staticmethod
-    def loss(y_true: Tensor, y_pred: Tensor) -> Tensor:
+    def loss(self, y_true: Tensor, y_pred: Tensor) -> Tensor:
         """
         損失関数
         """
@@ -97,27 +96,12 @@ class BaseNNet(metaclass=ABCMeta):
         # ŷ = [推定したxの移動量, 推定したyの移動量] ^ T
         ŷ = tf.expand_dims(y_pred[:, 0:2], axis=-1)
 
-        # Σ = U * Λ * U^T のように分解する（Λは対角行列、Uは回転行列）
-        # Λ = [[λ1, 0], [0, λ2]] = [[e^ρ1, 0], [0, e^ρ2]]
-        # λ>=0を満たすために、λ=e^ρで変数変換する（NNはρを出力）
-        Λ = tf.linalg.diag(tf.exp(y_pred[:, 2:4]))
-
-        # U = [[cos(θ), -sin(θ)], [sin(θ), cos(θ)]]
-        θ = y_pred[:, 4]
-        sin_θ = tf.expand_dims(K.sin(θ), axis=-1)
-        cos_θ = tf.expand_dims(K.cos(θ), axis=-1)
-        U = tf.concat([
-            tf.expand_dims(tf.concat([cos_θ, sin_θ], axis=-1), axis=-1),
-            tf.expand_dims(tf.concat([-sin_θ, cos_θ], axis=-1), axis=-1),
-        ], axis=-1)
-
-        # Σ = U * Λ * U^T
-        Σ = tf.linalg.matmul(tf.linalg.matmul(U, Λ), tf.linalg.matrix_transpose(U))
+        Σ = self.get_Σ(y_pred)
 
         # return tf.reduce_mean(
         #     tf.losses.mean_squared_error(y, ŷ)
         # )
-        return tf.reduce_mean(
+        return K.mean(
             tf.math.log((2 * np.pi) ** 2 * tf.linalg.det(Σ))
             + tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), tf.linalg.pinv(Σ)), (y - ŷ))
         )
@@ -157,6 +141,55 @@ class BaseNNet(metaclass=ABCMeta):
         ŷ_2 = y_pred[:, 1]
 
         return metrics.mean_absolute_error(y_2, ŷ_2)
+
+    def σ_x_mae(self, y_true: Tensor, y_pred: Tensor) -> Tensor:
+        """
+        xの移動量の標準偏差の評価関数
+        """
+
+        y1 = y_true[:, 0]
+        ŷ1 = y_pred[:, 0]
+
+        Σ = self.get_Σ(y_pred)
+        σ_x = K.sqrt(Σ[:, 0, 0])
+
+        return metrics.mean_absolute_error(K.abs(y1 - ŷ1), σ_x)
+
+    def σ_y_mae(self, y_true: Tensor, y_pred: Tensor) -> Tensor:
+        """
+        xの移動量の標準偏差の評価関数
+        """
+
+        y2 = y_true[:, 0]
+        ŷ2 = y_pred[:, 0]
+
+        Σ = self.get_Σ(y_pred)
+        σ_y = K.sqrt(Σ[:, 1, 1])
+
+        return metrics.mean_absolute_error(K.abs(y2 - ŷ2), σ_y)
+
+    @staticmethod
+    def get_Σ(y_pred: Tensor):
+        """
+        共分散行列を取得
+        """
+
+        # Σ = U * Λ * U^T のように分解する（Λは対角行列、Uは回転行列）
+        # Λ = [[λ1, 0], [0, λ2]] = [[e^ρ1, 0], [0, e^ρ2]]
+        # λ>=0を満たすために、λ=e^ρで変数変換する（NNはρを出力）
+        Λ = tf.linalg.diag(tf.exp(y_pred[:, 2:4]))
+
+        # U = [[cos(θ), -sin(θ)], [sin(θ), cos(θ)]]
+        θ = y_pred[:, 4]
+        sin_θ = tf.expand_dims(K.sin(θ), axis=-1)
+        cos_θ = tf.expand_dims(K.cos(θ), axis=-1)
+        U = tf.concat([
+            tf.expand_dims(tf.concat([cos_θ, sin_θ], axis=-1), axis=-1),
+            tf.expand_dims(tf.concat([-sin_θ, cos_θ], axis=-1), axis=-1),
+        ], axis=-1)
+
+        # Σ = U * Λ * U^T
+        return tf.linalg.matmul(tf.linalg.matmul(U, Λ), tf.linalg.matrix_transpose(U))
 
     def predict(self, x: np.ndarray):
         """
