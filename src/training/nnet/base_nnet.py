@@ -88,9 +88,6 @@ class BaseNNet(metaclass=ABCMeta):
         損失関数
         """
 
-        # 分母が極端に小さくなることを防ぐためのオフセット
-        epsilon = tf.constant(K.epsilon())
-
         # y = [xの移動量, yの移動量] ^ T
         y = tf.expand_dims(y_true[:, 0:2], axis=-1)
 
@@ -100,7 +97,8 @@ class BaseNNet(metaclass=ABCMeta):
         # Σ = U * Λ * U^T のように分解する（Λは対角行列、Uは回転行列）
         # Λ = [[λ1, 0], [0, λ2]]
         # Λ^1 = [[1/λ1, 0], [0, 1/λ2]] = [[ξ1, 0], [0, ξ2]]
-        Λ_inv = tf.linalg.diag(y_pred[:, 2:4] + epsilon)
+        # ξ = e^ρ として変数変換（ξ>=0をReLUで実現するのは悪手なので、NNにρを出力させることで解決している）
+        Λ_inv = tf.linalg.diag(tf.exp(y_pred[:, 2:4]))
 
         # U = [[cos(θ), -sin(θ)], [sin(θ), cos(θ)]]
         θ = y_pred[:, 4]
@@ -113,9 +111,8 @@ class BaseNNet(metaclass=ABCMeta):
 
         # Σ = U * Λ * U^T
         # Σ^-1 = U * Λ^1 * U^T
-        # FIXME: InvalidArgumentError
         Σ_inv = tf.matmul(tf.matmul(U, Λ_inv), tf.linalg.matrix_transpose(U))
-        det_Σ = 1.0 / (tf.linalg.det(Σ_inv) + epsilon)
+        det_Σ = 1.0 / (tf.linalg.det(Σ_inv))
 
         # return tf.reduce_mean(
         #     tf.losses.mean_squared_error(y, ŷ)
@@ -133,11 +130,11 @@ class BaseNNet(metaclass=ABCMeta):
 
         ŷ1 = y_pred[:, 0]
         ŷ2 = y_pred[:, 1]
-        ξ1 = tf.nn.relu(y_pred[:, 2])
-        ξ2 = tf.nn.relu(y_pred[:, 3])
+        ρ1 = y_pred[:, 2]
+        ρ2 = y_pred[:, 3]
         θ = y_pred[:, 4]
 
-        return tf.stack([ŷ1, ŷ2, ξ1, ξ2, θ], axis=1)
+        return tf.stack([ŷ1, ŷ2, ρ1, ρ2, θ], axis=1)
 
     @staticmethod
     def x_mae(y_true: Tensor, y_pred: Tensor) -> Tensor:
