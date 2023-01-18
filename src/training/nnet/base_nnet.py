@@ -91,7 +91,7 @@ class BaseNNet(metaclass=ABCMeta):
 
         return tf.reduce_mean(
             tf.math.log((2 * np.pi) ** 2 * tf.linalg.det(Σ))
-            + tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), tf.linalg.pinv(Σ)), (y - ŷ))
+            + tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), tf.linalg.inv(Σ)), (y - ŷ))
         )
 
     @staticmethod

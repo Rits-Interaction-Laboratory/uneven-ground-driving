@@ -13,7 +13,7 @@ class CNN(BaseNNet):
         self.model = Sequential()
 
         # input layer
-        self.model.add(layers.Input(shape=(128, 128, 1)))
+        self.model.add(layers.Input(shape=(128, 128, 3)))
 
         # convolution 1st layer
         self.model.add(layers.Conv2D(32, (3, 3), padding="same", activation="relu"))
