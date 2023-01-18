@@ -2,6 +2,7 @@ import json
 import os
 
 import numpy as np
+import tensorflow as tf
 import tqdm
 
 
@@ -13,7 +14,8 @@ class DrivingRecord:
     def __init__(self, src: dict):
         self.image_filename: str = os.path.expanduser('~/.ros/' + src['image_filename'])
         self.image_npy_filename: str = os.path.expanduser('~/.ros/' + src['image_npy_filename'])
-        self.image: np.ndarray = np.load(self.image_npy_filename).reshape((500, 500, 1))
+        self.image: np.ndarray = tf.image.resize(np.load(self.image_npy_filename).reshape((500, 500, 1)),
+                                                 (128, 128))
         self.odometries = [self.__Odometry(odometry_src) for odometry_src in src['odometries']]
 
     def get_movement_amount(self) -> tuple[float, float]:

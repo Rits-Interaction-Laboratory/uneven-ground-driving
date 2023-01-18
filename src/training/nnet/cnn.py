@@ -11,7 +11,7 @@ class CNN(BaseNNet):
 
         self.model = Sequential()
 
-        self.model.add(layers.Conv2D(32, 3, input_shape=(500, 500, 1)))
+        self.model.add(layers.Conv2D(32, 3, input_shape=(128, 128, 1)))
         self.model.add(layers.Activation('relu'))
         self.model.add(layers.Conv2D(32, 3))
         self.model.add(layers.Activation('relu'))
