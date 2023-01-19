@@ -70,7 +70,7 @@ class BaseNNet(metaclass=ABCMeta):
         return self.model.fit(
             x=x_train,
             y=y_train,
-            epochs=50,
+            epochs=30,
             batch_size=64,
             validation_data=(x_test, y_test),
             callbacks=[checkpoint_callback, early_stopping_callback],
@@ -177,6 +177,7 @@ class BaseNNet(metaclass=ABCMeta):
         ], axis=-1)
 
         # Σ = U * Λ * U^T
+        # FIXME: InvalidArgumentError: Input is not invertible.
         return tf.linalg.matmul(tf.linalg.matmul(U, Λ), tf.linalg.matrix_transpose(U))
 
     def predict(self, x: np.ndarray):

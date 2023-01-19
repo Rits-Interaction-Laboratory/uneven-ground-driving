@@ -76,6 +76,8 @@ def output_predict_results(data: list[DrivingRecord], label: str):
     plt.colorbar()
     plt.xlabel("ŷ_1")
     plt.ylabel("y_1")
+    plt.xlim(0, 1.5)
+    plt.ylim(0, 0.9)
     plt.savefig(f"./analysis/{label}_heatmap_x.png")
 
     plt.figure()
@@ -83,6 +85,8 @@ def output_predict_results(data: list[DrivingRecord], label: str):
     plt.colorbar()
     plt.xlabel("ŷ_2")
     plt.ylabel("y_2")
+    plt.xlim(-0.4, 0.4)
+    plt.ylim(-0.4, 0.4)
     plt.savefig(f"./analysis/{label}_heatmap_y.png")
 
     Σ = nnet.get_Σ(predict_results)
@@ -162,6 +166,7 @@ output_stats(driving_records)
 x: np.ndarray = np.array([driving_record.image for driving_record in driving_records], dtype=np.float32)
 y: np.ndarray = np.array([driving_record.get_movement_amount() for driving_record in driving_records],
                          dtype=np.float32)
+y = (y - y.min()) / (y.max() - y.min())
 
 split_index: int = int(len(driving_records) // 10)
 x_train = x[split_index:]
