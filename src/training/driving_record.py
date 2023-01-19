@@ -14,6 +14,8 @@ class DrivingRecord:
     def __init__(self, src: dict):
         self.image_filename: str = os.path.expanduser('~/.ros/' + src['image_filename'])
         self.image_npy_filename: str = os.path.expanduser('~/.ros/' + src['image_npy_filename'])
+        # self.image: np.ndarray = tf.image.resize(img_to_array(load_img(self.image_filename, color_mode="grayscale")),
+        #                                                  (128, 128))
         self.image: np.ndarray = tf.image.resize(np.load(self.image_npy_filename).reshape((500, 500, 1)),
                                                  (128, 128))
         self.image = tf.image.grayscale_to_rgb(self.image)

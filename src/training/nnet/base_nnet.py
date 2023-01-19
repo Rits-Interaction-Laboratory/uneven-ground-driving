@@ -73,7 +73,8 @@ class BaseNNet(metaclass=ABCMeta):
             epochs=30,
             batch_size=64,
             validation_data=(x_test, y_test),
-            callbacks=[checkpoint_callback, early_stopping_callback],
+            # callbacks=[checkpoint_callback, early_stopping_callback],
+            callbacks=[checkpoint_callback],
         )
 
     def loss(self, y_true: Tensor, y_pred: Tensor) -> Tensor:

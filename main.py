@@ -166,7 +166,6 @@ output_stats(driving_records)
 x: np.ndarray = np.array([driving_record.image for driving_record in driving_records], dtype=np.float32)
 y: np.ndarray = np.array([driving_record.get_movement_amount() for driving_record in driving_records],
                          dtype=np.float32)
-y = (y - y.min()) / (y.max() - y.min())
 
 split_index: int = int(len(driving_records) // 10)
 x_train = x[split_index:]
