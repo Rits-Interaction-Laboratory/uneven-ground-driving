@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow.python.keras.backend as K
 from tensorflow.python.keras import Model, metrics
-from tensorflow.python.keras.callbacks import ModelCheckpoint, EarlyStopping
+from tensorflow.python.keras.callbacks import ModelCheckpoint
 from tensorflow.python.types.core import Tensor
 
 
@@ -64,7 +64,7 @@ class BaseNNet(metaclass=ABCMeta):
         self.model.save_weights(checkpoint_filename.format(epoch=0))
 
         # early stopping
-        early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=2, verbose=0, mode='auto')
+        # early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=2, verbose=0, mode='auto')
 
         self.compile_model()
         return self.model.fit(
@@ -87,6 +87,10 @@ class BaseNNet(metaclass=ABCMeta):
 
         # ŷ = [推定したxの移動量, 推定したyの移動量] ^ T
         ŷ = tf.expand_dims(y_pred[:, 0:2], axis=-1)
+
+        return tf.reduce_mean(
+            tf.losses.mean_squared_error(y, ŷ)
+        )
 
         Σ = self.get_Σ(y_pred)
 

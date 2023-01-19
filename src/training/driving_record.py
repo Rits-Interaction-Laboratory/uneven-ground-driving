@@ -17,11 +17,10 @@ class DrivingRecord:
         self.image_npy_filename: str = os.path.expanduser('~/.ros/' + src['image_npy_filename'])
         self.image: np.ndarray = tf.image.resize(img_to_array(load_img(self.image_filename, color_mode="grayscale")),
                                                  (128, 128))
+        # self.image: np.ndarray = tf.image.resize(np.load(self.image_npy_filename).reshape((500, 500, 1)),
+        #                                         (128, 128))
         self.image = tf.image.grayscale_to_rgb(self.image)
         self.odometries = [self.__Odometry(odometry_src) for odometry_src in src['odometries']]
-
-        # 1. npyを使う
-        # 2. 3チャネルに拡張する（imagenetの重みを使わないとInvalidArgumentErrorになる）
 
     def get_movement_amount(self) -> tuple[float, float]:
         """
@@ -81,7 +80,7 @@ class DrivingRecordRepository:
             driving_record_json_lines: list[str] = f.readlines()
 
         driving_records: list[DrivingRecord] = []
-        for src in tqdm.tqdm(driving_record_json_lines[:5]):
+        for src in tqdm.tqdm(driving_record_json_lines):
             try:
                 driving_record = DrivingRecord(json.loads(src))
 
