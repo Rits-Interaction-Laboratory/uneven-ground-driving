@@ -76,7 +76,7 @@ class BaseNNet(metaclass=ABCMeta):
         return self.model.fit(
             x=x_train,
             y=y_train,
-            epochs=50,
+            epochs=5,
             batch_size=64,
             validation_data=(x_test, y_test),
             callbacks=[checkpoint_callback, logging_callback],
@@ -96,6 +96,10 @@ class BaseNNet(metaclass=ABCMeta):
 
         # ŷ = [推定したxの移動量, 推定したyの移動量] ^ T
         ŷ = tf.expand_dims(y_pred[:, 0:2], axis=-1)
+
+        return tf.reduce_mean(
+            tf.losses.mean_squared_error(y, ŷ)
+        )
 
         # Σ = U * Λ * U^T のように分解する（Λは対角行列、Uは回転行列）
         # Λ = [[λ1, 0], [0, λ2]]

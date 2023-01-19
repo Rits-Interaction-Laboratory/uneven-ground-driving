@@ -88,8 +88,8 @@ def output_train_history(history):
     """
 
     plt.figure()
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
+    plt.plot(np.log(history.history['loss']))
+    plt.plot(np.log(history.history['val_loss']))
     plt.ylabel('loss')
     plt.xlabel('epoch')
     plt.legend(['train', 'val'])
@@ -118,6 +118,7 @@ output_stats(driving_records)
 x: np.ndarray = np.array([driving_record.image for driving_record in driving_records], dtype=np.float32)
 y: np.ndarray = np.array([driving_record.get_movement_amount() for driving_record in driving_records],
                          dtype=np.float32)
+# y = (y - y.min()) / (y.max() - y.min())
 
 split_index: int = int(len(driving_records) // 10)
 x_train = x[split_index:]
