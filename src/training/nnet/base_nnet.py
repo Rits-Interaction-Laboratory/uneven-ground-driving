@@ -76,7 +76,7 @@ class BaseNNet(metaclass=ABCMeta):
         return self.model.fit(
             x=x_train,
             y=y_train,
-            epochs=5,
+            epochs=30,
             batch_size=64,
             validation_data=(x_test, y_test),
             callbacks=[checkpoint_callback, logging_callback],
