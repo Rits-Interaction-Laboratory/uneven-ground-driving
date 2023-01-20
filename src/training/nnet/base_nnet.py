@@ -158,7 +158,7 @@ class BaseNNet(metaclass=ABCMeta):
         return metrics.mean_absolute_error(K.abs(y2 - ŷ2), σ_y)
 
     @staticmethod
-    def get_Σ(y_pred: Tensor):
+    def get_Σ(y_pred):
         """
         共分散行列を取得
         """
