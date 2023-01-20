@@ -88,10 +88,6 @@ class BaseNNet(metaclass=ABCMeta):
         # ŷ = [推定したxの移動量, 推定したyの移動量] ^ T
         ŷ = tf.expand_dims(y_pred[:, 0:2], axis=-1)
 
-        return tf.reduce_mean(
-            tf.losses.mean_squared_error(y, ŷ)
-        )
-
         Σ = self.get_Σ(y_pred)
 
         return tf.reduce_mean(
@@ -107,8 +103,8 @@ class BaseNNet(metaclass=ABCMeta):
 
         ŷ1 = y_pred[:, 0]
         ŷ2 = y_pred[:, 1]
-        ρ1 = y_pred[:, 2]
-        ρ2 = y_pred[:, 3]
+        ρ1 = y_pred[:, 2] * K.constant(K.epsilon())
+        ρ2 = y_pred[:, 3] * K.constant(K.epsilon())
         θ = y_pred[:, 4]
 
         return tf.stack([ŷ1, ŷ2, ρ1, ρ2, θ], axis=1)
