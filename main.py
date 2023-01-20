@@ -61,10 +61,9 @@ def output_predict_results(data: list[DrivingRecord], label: str):
     """
     推定結果を出力
     """
-
     predict_results = nnet.predict(
         np.array([driving_record.image for driving_record in data], dtype=np.float32))
-    np.save("./analysis/predict_results.npy", predict_results)
+    np.save("./analysis/snapshot.npy", predict_results)
 
     pred_x_movement_amounts = predict_results[:, 0]
     pred_y_movement_amounts = predict_results[:, 1]
@@ -76,8 +75,8 @@ def output_predict_results(data: list[DrivingRecord], label: str):
     plt.colorbar()
     plt.xlabel("ŷ_1")
     plt.ylabel("y_1")
-    plt.xlim(0, 1.5)
-    plt.ylim(0, 0.9)
+    # plt.xlim(0, 1.5)
+    # plt.ylim(0, 0.9)
     plt.savefig(f"./analysis/{label}_heatmap_x.png")
 
     plt.figure()
@@ -85,8 +84,8 @@ def output_predict_results(data: list[DrivingRecord], label: str):
     plt.colorbar()
     plt.xlabel("ŷ_2")
     plt.ylabel("y_2")
-    plt.xlim(-0.4, 0.4)
-    plt.ylim(-0.4, 0.4)
+    # plt.xlim(-0.4, 0.4)
+    # plt.ylim(-0.4, 0.4)
     plt.savefig(f"./analysis/{label}_heatmap_y.png")
 
     Σ = nnet.get_Σ(predict_results)
@@ -120,9 +119,9 @@ def output_train_history(history):
     """
 
     plt.figure()
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.ylabel('loss')
+    plt.plot(np.log(history.history['loss']))
+    plt.plot(np.log(history.history['val_loss']))
+    plt.ylabel('log(loss)')
     plt.xlabel('epoch')
     plt.legend(['train', 'val'])
     plt.savefig("./analysis/history_loss.png")
