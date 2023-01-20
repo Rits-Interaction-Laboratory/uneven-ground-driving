@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+docker build -t averakjp/uneven-ground-driving .
+docker push averakjp/uneven-ground-driving:latest

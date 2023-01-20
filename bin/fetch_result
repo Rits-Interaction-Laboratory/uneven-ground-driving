@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+scp cuprum:~/analysis.tar.gz .
+tar xvzf analysis.tar.gz
+rm -f analysis.tar.gz

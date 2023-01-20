@@ -164,7 +164,7 @@ cython_debug/
 poetry.toml
 
 # Catkin
-build
+build/
 devel
 src/turtlebot3
 src/turtlebot3_msgs
