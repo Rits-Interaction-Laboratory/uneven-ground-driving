@@ -95,11 +95,13 @@ class BaseNNet(metaclass=ABCMeta):
         # ŷ = [推定したxの移動量, 推定したyの移動量] ^ T
         ŷ = tf.expand_dims(y_pred[:, 0:2], axis=-1)
 
-        Σ = self.get_Σ(y_pred)
+        ρ1 = y_pred[:, 2]
+        ρ2 = y_pred[:, 3]
+
+        Σ_inv = self.get_Σ_inv(y_pred)
 
         return tf.reduce_mean(
-            tf.math.log((2 * np.pi) ** 2 * tf.linalg.det(Σ))
-            + tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), tf.linalg.inv(Σ)), (y - ŷ))
+            ρ1 + ρ2 + tf.matmul(tf.matmul(tf.linalg.matrix_transpose(y - ŷ), Σ_inv), (y - ŷ))
         )
 
     @staticmethod
@@ -187,6 +189,25 @@ class BaseNNet(metaclass=ABCMeta):
         # Σ = U * Λ * U^T
         # FIXME: InvalidArgumentError: Input is not invertible.
         return tf.linalg.matmul(tf.linalg.matmul(U, Λ), tf.linalg.matrix_transpose(U))
+
+    @staticmethod
+    def get_Σ_inv(y_pred):
+        """
+        共分散行列の逆行列を取得
+        """
+
+        Λ_inv = tf.linalg.diag(tf.exp(-y_pred[:, 2:4]))
+
+        θ = y_pred[:, 4]
+        sin_θ = tf.expand_dims(K.sin(θ), axis=-1)
+        cos_θ = tf.expand_dims(K.cos(θ), axis=-1)
+        U = tf.concat([
+            tf.expand_dims(tf.concat([cos_θ, sin_θ], axis=-1), axis=-1),
+            tf.expand_dims(tf.concat([-sin_θ, cos_θ], axis=-1), axis=-1),
+        ], axis=-1)
+
+        # Σ^-1 = U * Λ^-1 * U^T
+        return tf.linalg.matmul(tf.linalg.matmul(U, Λ_inv), tf.linalg.matrix_transpose(U))
 
     def predict(self, x: np.ndarray):
         """
