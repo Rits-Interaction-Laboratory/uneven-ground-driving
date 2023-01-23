@@ -1,10 +1,11 @@
+import datetime
 from abc import ABCMeta, abstractmethod
 
 import numpy as np
 import tensorflow as tf
 import tensorflow.python.keras.backend as K
 from tensorflow.python.keras import Model, metrics
-from tensorflow.python.keras.callbacks import ModelCheckpoint
+from tensorflow.python.keras.callbacks import ModelCheckpoint, CSVLogger
 from tensorflow.python.types.core import Tensor
 
 
@@ -63,6 +64,13 @@ class BaseNNet(metaclass=ABCMeta):
         )
         self.model.save_weights(checkpoint_filename.format(epoch=0))
 
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+        logging_callback = CSVLogger(
+            filename=f"./analysis/history_{timestamp}.csv",
+            separator=",",
+            append=True,
+        )
+
         # early stopping
         # early_stopping_callback = EarlyStopping(monitor='val_loss', min_delta=0, patience=2, verbose=0, mode='auto')
 
@@ -73,8 +81,7 @@ class BaseNNet(metaclass=ABCMeta):
             epochs=50,
             batch_size=64,
             validation_data=(x_test, y_test),
-            # callbacks=[checkpoint_callback, early_stopping_callback],
-            callbacks=[checkpoint_callback],
+            callbacks=[checkpoint_callback, logging_callback],
         )
 
     def loss(self, y_true: Tensor, y_pred: Tensor) -> Tensor:
