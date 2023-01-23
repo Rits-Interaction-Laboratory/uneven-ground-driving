@@ -112,8 +112,8 @@ class BaseNNet(metaclass=ABCMeta):
 
         ŷ1 = y_pred[:, 0]
         ŷ2 = y_pred[:, 1]
-        ρ1 = y_pred[:, 2] * K.constant(K.epsilon())
-        ρ2 = y_pred[:, 3] * K.constant(K.epsilon())
+        ρ1 = y_pred[:, 2]
+        ρ2 = y_pred[:, 3]
         θ = y_pred[:, 4]
 
         return tf.stack([ŷ1, ŷ2, ρ1, ρ2, θ], axis=1)
