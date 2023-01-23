@@ -224,7 +224,7 @@ y_train = y[split_index:]
 y_test = y[0:split_index]
 
 logging.info('訓練開始')
-history = nnet.train(x_train, y_train, x_test, y_test)
+history = nnet.train(x_train, y_train)
 
 # 訓練履歴をプロット
 output_train_history(history)
