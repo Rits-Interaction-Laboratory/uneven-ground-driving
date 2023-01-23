@@ -165,7 +165,7 @@ def output_predict_results(predict_results: np.ndarray, true_movement_amounts: n
     σ2_standard_deviation_graph_y_list: list[float] = []
     σ2_standard_deviation_graph_x_list: list[float] = []
 
-    σ_bins: int = 100
+    σ_bins: int = 200
     σ1_range_width = (heatmap_σ1_range[1] - heatmap_σ1_range[0]) / σ_bins
     σ2_range_width = (heatmap_σ2_range[1] - heatmap_σ2_range[0]) / σ_bins
     for i in range(-1, σ_bins + 1):
@@ -193,6 +193,7 @@ def output_predict_results(predict_results: np.ndarray, true_movement_amounts: n
             σ2_standard_deviation_graph_x_list.append(y2_start)
             σ2_standard_deviation_graph_y_list.append(np.sqrt(σ2_sum / σ2_cnt))
 
+    # TODO: Y軸の描画範囲もtrain、testで揃える
     plt.figure()
     plt.hist2d(σ1_standard_deviation_graph_x_list, σ1_standard_deviation_graph_y_list, bins=σ_bins, cmin=1)
     plt.colorbar()
