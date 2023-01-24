@@ -20,6 +20,8 @@ class DrivingRecord:
 
         if True in np.isnan(self.image):
             raise ValueError('Depth画像にNaNが含まれています')
+        if self.image.max() > 1.2 or self.image.min() < 0.5:
+            raise ValueError('無効なDepth画像です')
 
         self.odometries = [self.__Odometry(odometry_src) for odometry_src in src['odometries']]
 

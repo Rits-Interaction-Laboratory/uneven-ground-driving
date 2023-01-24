@@ -40,7 +40,8 @@ class BaseNNet(metaclass=ABCMeta):
         self.model.compile(
             optimizer="adam",
             loss=self.loss,
-            metrics=[self.x_mae, self.y_mae, self.σ_x_mae, self.σ_y_mae],
+            # metrics=[self.x_mae, self.y_mae, self.σ_x_mae, self.σ_y_mae],
+            metrics=[self.x_mae, self.y_mae],
         )
 
     def load_weights(self, filename):
@@ -78,7 +79,7 @@ class BaseNNet(metaclass=ABCMeta):
         return self.model.fit(
             x=x,
             y=y,
-            epochs=50,
+            epochs=200,
             batch_size=64,
             validation_split=0.1,
             callbacks=[checkpoint_callback, logging_callback],

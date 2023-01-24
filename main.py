@@ -219,10 +219,10 @@ y: np.ndarray = np.array([driving_record.get_movement_amount() for driving_recor
                          dtype=np.float32)
 
 split_index: int = int(len(driving_records) // 10)
-x_train = x[split_index:]
-x_test = x[0:split_index]
-y_train = y[split_index:]
-y_test = y[0:split_index]
+x_train: np.ndarray = x[split_index:]
+x_test: np.ndarray = x[0:split_index]
+y_train: np.ndarray = y[split_index:]
+y_test: np.ndarray = y[0:split_index]
 
 logging.info('訓練開始')
 history = nnet.train(x_train, y_train)
