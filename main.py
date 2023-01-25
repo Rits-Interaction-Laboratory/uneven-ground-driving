@@ -5,6 +5,7 @@ import sys
 import numpy as np
 import tensorflow.python.keras.backend as K
 from matplotlib import pyplot as plt
+from matplotlib.collections import LineCollection
 
 from src.training.driving_record import DrivingRecord, DrivingRecordRepository
 from src.training.nnet.base_nnet import BaseNNet
@@ -86,21 +87,21 @@ def output_train_history(history):
     plt.legend(['train', 'val'])
     plt.savefig("./analysis/history_y_mae.png")
 
-    plt.figure()
-    plt.plot(history.history['σ_x_mae'])
-    plt.plot(history.history['val_σ_x_mae'])
-    plt.ylabel('||y_1 - ŷ_1| - σ_y1|')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'val'])
-    plt.savefig("./analysis/history_σ_x_mae.png")
+    # plt.figure()
+    # plt.plot(history.history['σ_x_mae'])
+    # plt.plot(history.history['val_σ_x_mae'])
+    # plt.ylabel('||y_1 - ŷ_1| - σ_y1|')
+    # plt.xlabel('epoch')
+    # plt.legend(['train', 'val'])
+    # plt.savefig("./analysis/history_σ_x_mae.png")
 
-    plt.figure()
-    plt.plot(history.history['σ_y_mae'])
-    plt.plot(history.history['val_σ_y_mae'])
-    plt.ylabel('||y_2 - ŷ_2| - σ_y2|')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'val'])
-    plt.savefig("./analysis/history_σ_y_mae.png")
+    # plt.figure()
+    # plt.plot(history.history['σ_y_mae'])
+    # plt.plot(history.history['val_σ_y_mae'])
+    # plt.ylabel('||y_2 - ŷ_2| - σ_y2|')
+    # plt.xlabel('epoch')
+    # plt.legend(['train', 'val'])
+    # plt.savefig("./analysis/history_σ_y_mae.png")
 
 
 def output_predict_results(predict_results: np.ndarray, true_movement_amounts: np.ndarray, label: str,
@@ -134,6 +135,23 @@ def output_predict_results(predict_results: np.ndarray, true_movement_amounts: n
     plt.xlim(*heatmap_y2_range)
     plt.ylim(-0.4, 0.4)
     plt.savefig(f"./analysis/{label}_heatmap_y.png")
+
+    # 真値と推定値の線分を描画
+    lines = [[[y1_movement_amounts[i], y2_movement_amounts[i]], [ŷ1_movement_amounts[i], ŷ2_movement_amounts[i]]]
+             for i in range(predict_results.shape[0])]
+    for size in [100, 200, 300]:
+        fig = plt.figure()
+        ax = fig.add_subplot()
+        ax.add_collection(LineCollection(lines[:size]))
+        ax.autoscale()
+        plt.savefig(f"./analysis/{label}_y_ŷ_lines_{size}.png")
+
+        fig = plt.figure()
+        ax = fig.add_subplot()
+        ax.add_collection(LineCollection(lines[:size]))
+        ax.set_xlim(0.65, 0.83)
+        ax.set_ylim(-0.18, 0.18)
+        plt.savefig(f"./analysis/{label}_y_ŷ_lines_expansion_{size}.png")
 
     Σ = nnet.get_Σ(predict_results)
     σ1_list = K.sqrt(Σ[:, 0, 0])
