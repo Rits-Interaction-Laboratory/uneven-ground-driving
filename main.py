@@ -5,8 +5,6 @@ import sys
 import numpy as np
 import tensorflow.python.keras.backend as K
 from matplotlib import pyplot as plt
-from matplotlib.collections import LineCollection
-from matplotlib.patches import Ellipse
 
 from src.training.driving_record import DrivingRecord, DrivingRecordRepository
 from src.training.nnet.base_nnet import BaseNNet
@@ -45,17 +43,21 @@ def output_stats(data: list[DrivingRecord]):
     os.makedirs("./analysis", exist_ok=True)
     plt.figure()
     plt.hist(x_movement_amounts, bins=100)
+    plt.xlabel(r"$x_1$")
+    plt.ylabel("samples")
     plt.savefig("./analysis/histogram_x.png")
 
     plt.figure()
     plt.hist(y_movement_amounts, bins=100)
+    plt.xlabel(r"$x_2$")
+    plt.ylabel("samples")
     plt.savefig("./analysis/histogram_y.png")
 
     plt.figure()
     plt.hist2d(x_movement_amounts, y_movement_amounts, bins=100, cmin=1)
     plt.colorbar()
-    plt.xlabel("x")
-    plt.ylabel("y")
+    plt.xlabel(r"$x_1$")
+    plt.ylabel(r"$x_2$")
     plt.savefig("./analysis/histogram_xy.png")
 
 
@@ -125,11 +127,12 @@ def output_predict_results(predict_results: np.ndarray, true_movement_amounts: n
     y1_movement_amounts = true_movement_amounts[:, 0]
     y2_movement_amounts = true_movement_amounts[:, 1]
 
+    # TODO: ヒートマップ上にy=xの直線を表示
     plt.figure()
     plt.hist2d(ŷ1_movement_amounts, y1_movement_amounts, bins=100, cmin=1)
     plt.colorbar()
-    plt.xlabel("x̂_1")
-    plt.ylabel("x_1")
+    plt.xlabel(r"$\hat{x_1}$")
+    plt.ylabel(r"$x_1$")
     plt.xlim(*heatmap_y1_range)
     plt.ylim(0.0, 0.9)
     plt.savefig(f"./analysis/{label}_heatmap_x.png")
@@ -137,12 +140,13 @@ def output_predict_results(predict_results: np.ndarray, true_movement_amounts: n
     plt.figure()
     plt.hist2d(ŷ2_movement_amounts, y2_movement_amounts, bins=100, cmin=1)
     plt.colorbar()
-    plt.xlabel("x̂_2")
-    plt.ylabel("x_2")
+    plt.xlabel(r"$\hat{x_2}$")
+    plt.ylabel(r"$x_2$")
     plt.xlim(*heatmap_y2_range)
     plt.ylim(-0.4, 0.4)
     plt.savefig(f"./analysis/{label}_heatmap_y.png")
 
+    """
     # 真値と推定値の線分を描画
     lines = [[[y1_movement_amounts[i], y2_movement_amounts[i]], [ŷ1_movement_amounts[i], ŷ2_movement_amounts[i]]]
              for i in range(predict_results.shape[0])]
@@ -181,7 +185,9 @@ def output_predict_results(predict_results: np.ndarray, true_movement_amounts: n
         ax.set_xlim(-2.0, 2.0)
         ax.set_ylim(-2.0, 2.0)
         plt.savefig(f"./analysis/{label}_Σ_{size}.png")
+    """
 
+    Σ_list = nnet.get_Σ(predict_results)
     σ1_list = K.sqrt(Σ_list[:, 0, 0])
     σ2_list = K.sqrt(Σ_list[:, 1, 1])
 
@@ -194,15 +200,15 @@ def output_predict_results(predict_results: np.ndarray, true_movement_amounts: n
     plt.figure()
     plt.hist2d(σ1_list, y1_errors, bins=100, cmin=1)
     plt.colorbar()
-    plt.xlabel("σ_1")
-    plt.ylabel("|x̂_1 - x_1|")
+    plt.xlabel(r"$\hat{\sigma_1}$")
+    plt.ylabel(r"$|\hat{x_1} - x_1|$")
     plt.savefig(f"./analysis/{label}_heatmap_σ_x_error.png")
 
     plt.figure()
     plt.hist2d(σ2_list, y2_errors, bins=100, cmin=1)
     plt.colorbar()
-    plt.xlabel("σ_2")
-    plt.ylabel("|x̂_2 - x_2|")
+    plt.xlabel(r"$\hat{\sigma_2}$")
+    plt.ylabel(r"$|\hat{x_2} - x_2|$")
     plt.savefig(f"./analysis/{label}_heatmap_σ_y_error.png")
 
     # σと残差標準偏差をプロットする（ただし、残差標準偏差を求める際は平均で引かない）
@@ -239,12 +245,11 @@ def output_predict_results(predict_results: np.ndarray, true_movement_amounts: n
             σ2_standard_deviation_graph_x_list.append(y2_start)
             σ2_standard_deviation_graph_y_list.append(np.sqrt(σ2_sum / σ2_cnt))
 
-    # TODO: Y軸の描画範囲もtrain、testで揃える
     plt.figure()
     plt.hist2d(σ1_standard_deviation_graph_x_list, σ1_standard_deviation_graph_y_list, bins=σ_bins, cmin=1)
     plt.colorbar()
-    plt.xlabel("σ_1")
-    plt.ylabel("|x̂_1 - x_1| standard deviation")
+    plt.xlabel(r"$\hat{\sigma_1}$")
+    plt.ylabel("RMSE")
     plt.xlim(*heatmap_σ1_range)
     plt.ylim(*y1_error_range)
     plt.savefig(f"./analysis/{label}_heatmap_σ_x_standard_deviation.png")
@@ -252,8 +257,8 @@ def output_predict_results(predict_results: np.ndarray, true_movement_amounts: n
     plt.figure()
     plt.hist2d(σ2_standard_deviation_graph_x_list, σ2_standard_deviation_graph_y_list, bins=σ_bins, cmin=1)
     plt.colorbar()
-    plt.xlabel("σ_2")
-    plt.ylabel("|x̂_2 - x_2| standard deviation")
+    plt.xlabel(r"$\hat{\sigma_2}$")
+    plt.ylabel("RMSE")
     plt.xlim(*heatmap_σ2_range)
     plt.ylim(*y2_error_range)
     plt.savefig(f"./analysis/{label}_heatmap_σ_y_standard_deviation.png")
