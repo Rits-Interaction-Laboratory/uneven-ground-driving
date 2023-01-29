@@ -89,7 +89,7 @@ class DrivingRecordRepository:
 
                 # Xの移動量が負の記録は除去する（=前進したはずが後ろに移動したもの）
                 if (driving_record.get_movement_amount()[0]) >= 0:
-                    driving_records.append(DrivingRecord(json.loads(src)))
+                    driving_records.append(driving_record)
             except (FileNotFoundError, ImportError, ValueError, KeyError):
                 pass
 
